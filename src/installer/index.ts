@@ -35,6 +35,7 @@ export const AGENTS_DIR = join(CLAUDE_CONFIG_DIR, 'agents');
 export const COMMANDS_DIR = join(CLAUDE_CONFIG_DIR, 'commands');
 export const SKILLS_DIR = join(CLAUDE_CONFIG_DIR, 'skills');
 export const HOOKS_DIR = join(CLAUDE_CONFIG_DIR, 'hooks');
+export const HUD_DIR = join(CLAUDE_CONFIG_DIR, 'hud');
 export const SETTINGS_FILE = join(CLAUDE_CONFIG_DIR, 'settings.json');
 export const VERSION_FILE = join(CLAUDE_CONFIG_DIR, '.sisyphus-version.json');
 
@@ -2479,7 +2480,81 @@ Skills are saved as markdown files with YAML frontmatter containing:
 
 - /note - Save quick notes that survive compaction (less formal than skills)
 - /ralph-loop - Start a development loop with learning capture
-`
+`,
+
+  'hud/skill.md': `---
+description: Configure HUD display options (layout, presets, display elements)
+---
+
+# Sisyphus HUD Configuration
+
+$ARGUMENTS
+
+Configure the Sisyphus HUD (Heads-Up Display) for the statusline.
+
+## Quick Commands
+
+| Command | Description |
+|---------|-------------|
+| \`/hud\` | Show current HUD status |
+| \`/hud minimal\` | Switch to minimal display |
+| \`/hud focused\` | Switch to focused display (default) |
+| \`/hud full\` | Switch to full display |
+| \`/hud status\` | Show detailed HUD status |
+
+## Display Presets
+
+### Minimal
+Shows only the essentials:
+\`\`\`
+[SISYPHUS] ralph | ultrawork | todos:2/5
+\`\`\`
+
+### Focused (Default)
+Shows all relevant elements:
+\`\`\`
+[SISYPHUS] ralph:3/10 | US-002 | ultrawork | ctx:67% | agents:2 | bg:3/5 | todos:2/5
+\`\`\`
+
+### Full
+Shows everything including model info and detailed progress:
+\`\`\`
+[SISYPHUS] ralph:3/10 | US-002 (2/5) | ultrawork | ctx:[████░░]67% | agents:[explore,oracle] | bg:3/5 | todos:2/5 "Implementing..."
+\`\`\`
+
+## Display Elements
+
+| Element | Description |
+|---------|-------------|
+| \`[SISYPHUS]\` | Mode identifier |
+| \`ralph:3/10\` | Ralph loop iteration/max |
+| \`US-002\` | Current PRD story ID |
+| \`ultrawork\` | Active skill badge |
+| \`ctx:67%\` | Context window usage |
+| \`agents:2\` | Running subagent count |
+| \`bg:3/5\` | Background task slots |
+| \`todos:2/5\` | Todo completion |
+
+## Color Coding
+
+- **Green**: Normal/healthy
+- **Yellow**: Warning (context >70%, ralph >7)
+- **Red**: Critical (context >85%, ralph at max)
+
+## Configuration Location
+
+HUD config is stored at: \`~/.claude/.sisyphus/hud-config.json\`
+
+## Troubleshooting
+
+If the HUD is not showing:
+1. Check settings.json has statusLine configured
+2. Run \`/doctor\` to check installation
+3. Verify HUD script exists at \`~/.claude/hud/sisyphus-hud.mjs\`
+
+---
+
+*The HUD updates automatically every ~300ms during active sessions.*`
 };
 
 // SKILL_DEFINITIONS removed - skills are now only in COMMAND_DEFINITIONS to avoid duplicates
@@ -2834,6 +2909,78 @@ export function install(options: InstallOptions = {}): InstallResult {
     } catch (_e) {
       log('  Warning: Could not configure hooks in settings.json (non-fatal)');
       result.hooksConfigured = false;
+    }
+
+    // Install HUD statusline
+    log('Installing HUD statusline...');
+    try {
+      if (!existsSync(HUD_DIR)) {
+        mkdirSync(HUD_DIR, { recursive: true });
+      }
+
+      // Build the HUD script content (compiled from src/hud/index.ts)
+      // For now, we create a wrapper that uses the installed package
+      const hudScriptPath = join(HUD_DIR, 'sisyphus-hud.mjs');
+      const hudScriptLines = [
+        '#!/usr/bin/env node',
+        '/**',
+        ' * Sisyphus HUD - Statusline Script',
+        ' * Wrapper that imports from the installed oh-my-claude-sisyphus package',
+        ' */',
+        '',
+        '// Dynamic import - try installed location first, then fallback',
+        'async function main() {',
+        '  try {',
+        '    // Try direct import (works if globally installed)',
+        '    await import("oh-my-claude-sisyphus/dist/hud/index.js");',
+        '  } catch {',
+        '    // Fallback: just output minimal HUD',
+        '    console.log("[SISYPHUS] active");',
+        '  }',
+        '}',
+        '',
+        'main();',
+      ];
+      const hudScript = hudScriptLines.join('\n');
+
+      writeFileSync(hudScriptPath, hudScript);
+      if (!isWindows()) {
+        chmodSync(hudScriptPath, 0o755);
+      }
+      log('  Installed sisyphus-hud.mjs');
+
+      // Configure statusLine in settings.json if not already set
+      try {
+        let existingSettings: Record<string, unknown> = {};
+        if (existsSync(SETTINGS_FILE)) {
+          const settingsContent = readFileSync(SETTINGS_FILE, 'utf-8');
+          existingSettings = JSON.parse(settingsContent);
+        }
+
+        // Only add statusLine if not already configured
+        if (!existingSettings.statusLine) {
+          existingSettings.statusLine = {
+            type: 'command',
+            command: 'node ' + hudScriptPath
+          };
+          writeFileSync(SETTINGS_FILE, JSON.stringify(existingSettings, null, 2));
+          log('  Configured statusLine in settings.json');
+        } else {
+          log('  statusLine already configured, skipping (use --force to override)');
+          if (options.force) {
+            existingSettings.statusLine = {
+              type: 'command',
+              command: 'node ' + hudScriptPath
+            };
+            writeFileSync(SETTINGS_FILE, JSON.stringify(existingSettings, null, 2));
+            log('  Updated statusLine in settings.json (--force)');
+          }
+        }
+      } catch {
+        log('  Warning: Could not configure statusLine in settings.json');
+      }
+    } catch (_e) {
+      log('  Warning: Could not install HUD statusline (non-fatal)');
     }
 
     // Save version metadata

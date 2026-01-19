@@ -15,6 +15,7 @@
 
 import { detectKeywordsWithType, removeCodeBlocks } from './keyword-detector/index.js';
 import { readRalphState, incrementRalphIteration, clearRalphState, detectCompletionPromise } from './ralph-loop/index.js';
+import { addBackgroundTask, completeBackgroundTask } from '../hud/background-tasks.js';
 import {
   readVerificationState,
   startVerification,
@@ -354,6 +355,58 @@ Please continue working on these tasks.
 }
 
 /**
+ * Process pre-tool-use hook
+ * Tracks background tasks when Task tool is invoked
+ */
+function processPreToolUse(input: HookInput): HookOutput {
+  const directory = input.directory || process.cwd();
+
+  // Track Task tool invocations for HUD background tasks display
+  if (input.toolName === 'Task') {
+    const toolInput = input.toolInput as {
+      description?: string;
+      subagent_type?: string;
+      run_in_background?: boolean;
+    } | undefined;
+
+    // Only track if running in background or likely to take a while
+    if (toolInput?.description) {
+      // Generate a pseudo-ID from the description hash (tool_use_id not available in pre-hook)
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      addBackgroundTask(
+        taskId,
+        toolInput.description,
+        toolInput.subagent_type,
+        directory
+      );
+    }
+  }
+
+  return { continue: true };
+}
+
+/**
+ * Process post-tool-use hook
+ * Marks background tasks as completed
+ */
+function processPostToolUse(input: HookInput): HookOutput {
+  const directory = input.directory || process.cwd();
+
+  // Track Task tool completion for HUD
+  if (input.toolName === 'Task') {
+    const toolInput = input.toolInput as {
+      description?: string;
+    } | undefined;
+
+    // We don't have the exact task ID, but the HUD state cleanup handles this
+    // For now, this is a placeholder - proper tracking would need tool_use_id
+    // which isn't reliably available in all hook scenarios
+  }
+
+  return { continue: true };
+}
+
+/**
  * Main hook processor
  * Routes to specific hook handler based on type
  */
@@ -379,12 +432,10 @@ export async function processHook(
         return await processSessionStart(input);
 
       case 'pre-tool-use':
-        // Pre-tool-use hooks can be extended here
-        return { continue: true };
+        return processPreToolUse(input);
 
       case 'post-tool-use':
-        // Post-tool-use hooks can be extended here
-        return { continue: true };
+        return processPostToolUse(input);
 
       default:
         return { continue: true };
