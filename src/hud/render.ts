@@ -7,7 +7,7 @@
 import type { HudRenderContext, HudConfig } from './types.js';
 import { bold, dim } from './colors.js';
 import { renderRalph } from './elements/ralph.js';
-import { renderAgentsByFormat } from './elements/agents.js';
+import { renderAgentsByFormat, renderAgentsMultiLine } from './elements/agents.js';
 import { renderTodos } from './elements/todos.js';
 import { renderSkills } from './elements/skills.js';
 import { renderContext } from './elements/context.js';
@@ -15,10 +15,11 @@ import { renderBackground } from './elements/background.js';
 import { renderPrd } from './elements/prd.js';
 
 /**
- * Render the complete statusline
+ * Render the complete statusline (single or multi-line)
  */
 export function render(context: HudRenderContext, config: HudConfig): string {
   const elements: string[] = [];
+  const detailLines: string[] = [];
   const { elements: enabledElements } = config;
 
   // [SISYPHUS] label
@@ -50,13 +51,21 @@ export function render(context: HudRenderContext, config: HudConfig): string {
     if (ctx) elements.push(ctx);
   }
 
-  // Active agents
+  // Active agents - handle multi-line format specially
   if (enabledElements.agents) {
-    const agents = renderAgentsByFormat(
-      context.activeAgents,
-      enabledElements.agentsFormat || 'codes'
-    );
-    if (agents) elements.push(agents);
+    const format = enabledElements.agentsFormat || 'codes';
+
+    if (format === 'multiline') {
+      // Multi-line mode: get header part and detail lines
+      const maxLines = enabledElements.agentsMaxLines || 5;
+      const result = renderAgentsMultiLine(context.activeAgents, maxLines);
+      if (result.headerPart) elements.push(result.headerPart);
+      detailLines.push(...result.detailLines);
+    } else {
+      // Single-line mode: standard format
+      const agents = renderAgentsByFormat(context.activeAgents, format);
+      if (agents) elements.push(agents);
+    }
   }
 
   // Background tasks
@@ -71,6 +80,13 @@ export function render(context: HudRenderContext, config: HudConfig): string {
     if (todos) elements.push(todos);
   }
 
-  // Join with separator
-  return elements.join(dim(' | '));
+  // Compose output
+  const headerLine = elements.join(dim(' | '));
+
+  // If we have detail lines, output multi-line
+  if (detailLines.length > 0) {
+    return [headerLine, ...detailLines].join('\n');
+  }
+
+  return headerLine;
 }

@@ -147,8 +147,9 @@ export type HudPreset = 'minimal' | 'focused' | 'full';
  * - detailed: agents:[oracle(2m),explore,sj]
  * - descriptions: O:analyzing code | e:searching (codes + what they're doing)
  * - tasks: [analyzing code, searching...] (just descriptions - most readable)
+ * - multiline: Multi-line display with full agent details on separate lines
  */
-export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks';
+export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks' | 'multiline';
 
 export interface HudElementConfig {
   sisyphusLabel: boolean;
@@ -158,6 +159,7 @@ export interface HudElementConfig {
   contextBar: boolean;
   agents: boolean;
   agentsFormat: AgentsFormat;
+  agentsMaxLines: number;  // Max agent detail lines for multiline format (default: 5)
   backgroundTasks: boolean;
   todos: boolean;
 }
@@ -186,7 +188,8 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: 'tasks', // Show what agents are doing - no learning curve
+    agentsFormat: 'multiline', // Multi-line for rich agent visualization
+    agentsMaxLines: 5, // Show up to 5 agent detail lines
     backgroundTasks: true,
     todos: true,
   },
@@ -204,8 +207,9 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     prdStory: false,
     activeSkills: true,
     contextBar: false,
-    agents: false,
-    agentsFormat: 'count',
+    agents: true,
+    agentsFormat: 'count', // Just count for minimal mode
+    agentsMaxLines: 0,
     backgroundTasks: false,
     todos: true,
   },
@@ -216,7 +220,8 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: 'tasks', // Show what agents are doing - most readable
+    agentsFormat: 'multiline', // Multi-line for rich visualization
+    agentsMaxLines: 3, // Show up to 3 agents
     backgroundTasks: true,
     todos: true,
   },
@@ -227,7 +232,8 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: 'descriptions', // Codes + descriptions for power users
+    agentsFormat: 'multiline', // Multi-line with more details
+    agentsMaxLines: 10, // Show many agents in full mode
     backgroundTasks: true,
     todos: true,
   },

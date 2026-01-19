@@ -13,6 +13,7 @@ import {
   renderAgentsWithDescriptions,
   renderAgentsDescOnly,
   renderAgentsByFormat,
+  renderAgentsMultiLine,
 } from '../hud/elements/agents.js';
 import type { ActiveAgent } from '../hud/types.js';
 
@@ -321,6 +322,119 @@ describe('Agents Element', () => {
       ];
       const result = renderAgentsCoded(agents);
       expect(result).toContain(CYAN);
+    });
+  });
+
+  describe('renderAgentsMultiLine (multiline format)', () => {
+    it('should return empty for no running agents', () => {
+      const result = renderAgentsMultiLine([]);
+      expect(result.headerPart).toBeNull();
+      expect(result.detailLines).toHaveLength(0);
+    });
+
+    it('should return empty for completed agents only', () => {
+      const agents: ActiveAgent[] = [
+        { ...createAgent('oh-my-claude-sisyphus:oracle'), status: 'completed' },
+      ];
+      const result = renderAgentsMultiLine(agents);
+      expect(result.headerPart).toBeNull();
+      expect(result.detailLines).toHaveLength(0);
+    });
+
+    it('should render single agent with tree character (last)', () => {
+      const agents: ActiveAgent[] = [
+        {
+          ...createAgent('oh-my-claude-sisyphus:oracle', 'opus'),
+          description: 'analyzing code',
+        },
+      ];
+      const result = renderAgentsMultiLine(agents);
+      expect(result.headerPart).toContain('agents:');
+      expect(result.headerPart).toContain('1');
+      expect(result.detailLines).toHaveLength(1);
+      // Single agent should use └─ (last indicator)
+      expect(result.detailLines[0]).toContain('└─');
+      expect(result.detailLines[0]).toContain('O');
+      expect(result.detailLines[0]).toContain('analyzing code');
+    });
+
+    it('should render multiple agents with correct tree characters', () => {
+      const agents: ActiveAgent[] = [
+        {
+          ...createAgent('oh-my-claude-sisyphus:oracle', 'opus'),
+          description: 'analyzing code',
+        },
+        {
+          ...createAgent('oh-my-claude-sisyphus:explore', 'haiku'),
+          description: 'searching files',
+        },
+      ];
+      const result = renderAgentsMultiLine(agents);
+      expect(result.headerPart).toContain('2');
+      expect(result.detailLines).toHaveLength(2);
+      // First agent uses ├─
+      expect(result.detailLines[0]).toContain('├─');
+      expect(result.detailLines[0]).toContain('O');
+      // Last agent uses └─
+      expect(result.detailLines[1]).toContain('└─');
+      expect(result.detailLines[1]).toContain('e');
+    });
+
+    it('should limit to maxLines and show overflow indicator', () => {
+      const agents: ActiveAgent[] = [
+        createAgent('oh-my-claude-sisyphus:oracle', 'opus'),
+        createAgent('oh-my-claude-sisyphus:explore', 'haiku'),
+        createAgent('oh-my-claude-sisyphus:sisyphus-junior', 'sonnet'),
+        createAgent('oh-my-claude-sisyphus:librarian', 'haiku'),
+      ];
+      const result = renderAgentsMultiLine(agents, 2);
+      // 2 agents + 1 overflow indicator
+      expect(result.detailLines).toHaveLength(3);
+      expect(result.detailLines[2]).toContain('+2 more');
+    });
+
+    it('should include duration for long-running agents', () => {
+      const agents: ActiveAgent[] = [
+        createAgent(
+          'oh-my-claude-sisyphus:oracle',
+          'opus',
+          new Date(Date.now() - 120000) // 2 minutes ago
+        ),
+      ];
+      const result = renderAgentsMultiLine(agents);
+      expect(result.detailLines).toHaveLength(1);
+      expect(result.detailLines[0]).toContain('2m');
+    });
+
+    it('should truncate long descriptions', () => {
+      const agents: ActiveAgent[] = [
+        {
+          ...createAgent('oh-my-claude-sisyphus:oracle', 'opus'),
+          description:
+            'This is a very long description that should be truncated to fit in the display',
+        },
+      ];
+      const result = renderAgentsMultiLine(agents);
+      expect(result.detailLines).toHaveLength(1);
+      expect(result.detailLines[0]).toContain('...');
+      // Strip ANSI codes before checking length
+      const stripped = result.detailLines[0].replace(/\x1b\[[0-9;]*m/g, '');
+      expect(stripped.length).toBeLessThan(80);
+    });
+
+    it('should handle agents without descriptions', () => {
+      const agents: ActiveAgent[] = [createAgent('oh-my-claude-sisyphus:oracle', 'opus')];
+      const result = renderAgentsMultiLine(agents);
+      expect(result.detailLines).toHaveLength(1);
+      expect(result.detailLines[0]).toContain('...');
+    });
+
+    it('should route to multiline from renderAgentsByFormat', () => {
+      const agents: ActiveAgent[] = [createAgent('oh-my-claude-sisyphus:oracle', 'opus')];
+      const result = renderAgentsByFormat(agents, 'multiline');
+      // Should return the header part only (backward compatibility)
+      expect(result).toContain('agents:');
+      expect(result).toContain('1');
     });
   });
 });

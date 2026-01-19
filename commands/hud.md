@@ -33,10 +33,21 @@ Shows all relevant elements:
 ```
 
 ### Full
-Shows everything including model info and detailed progress:
+Shows everything including multi-line agent details:
 ```
-[SISYPHUS] ralph:3/10 | US-002 (2/5) | ultrawork | ctx:[████░░]67% | agents:[explore,oracle] | bg:3/5 | todos:2/5 "Implementing..."
+[SISYPHUS] ralph:3/10 | US-002 (2/5) | ultrawork | ctx:[████░░]67% | agents:3 | bg:3/5 | todos:2/5
+├─ O oracle       2m   analyzing architecture patterns...
+├─ e explore     45s   searching for test files
+└─ s sj-junior    1m   implementing validation logic
 ```
+
+## Multi-Line Agent Display
+
+When agents are running, the HUD shows detailed information on separate lines:
+- **Tree characters** (`├─`, `└─`) show visual hierarchy
+- **Agent code** (O, e, s) indicates agent type with model tier color
+- **Duration** shows how long each agent has been running
+- **Description** shows what each agent is doing (up to 45 chars)
 
 ## Display Elements
 

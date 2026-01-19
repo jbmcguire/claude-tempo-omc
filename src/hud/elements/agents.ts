@@ -323,6 +323,88 @@ export function renderAgentsDescOnly(agents: ActiveAgent[]): string | null {
 }
 
 /**
+ * Format duration with padding for alignment.
+ */
+function formatDurationPadded(durationMs: number): string {
+  const seconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+
+  if (seconds < 10) {
+    return '    '; // No duration for very short
+  } else if (seconds < 60) {
+    return `${seconds}s`.padStart(4);
+  } else if (minutes < 10) {
+    return `${minutes}m`.padStart(4);
+  } else {
+    return `${minutes}m`.padStart(4);
+  }
+}
+
+/**
+ * Multi-line render result type.
+ */
+export interface MultiLineRenderResult {
+  headerPart: string | null;
+  detailLines: string[];
+}
+
+/**
+ * Render agents as multi-line display for maximum clarity.
+ * Returns header addition + multiple detail lines.
+ *
+ * Format:
+ * ├─ O oracle     2m   analyzing architecture patterns...
+ * ├─ e explore    45s  searching for test files
+ * └─ s sj-junior  1m   implementing validation logic
+ */
+export function renderAgentsMultiLine(
+  agents: ActiveAgent[],
+  maxLines: number = 5
+): MultiLineRenderResult {
+  const running = agents.filter((a) => a.status === 'running');
+
+  if (running.length === 0) {
+    return { headerPart: null, detailLines: [] };
+  }
+
+  // Header part shows count for awareness
+  const headerPart = `agents:${CYAN}${running.length}${RESET}`;
+
+  // Build detail lines
+  const now = Date.now();
+  const detailLines: string[] = [];
+  const displayCount = Math.min(running.length, maxLines);
+
+  running.slice(0, maxLines).forEach((a, index) => {
+    const isLast = index === displayCount - 1 && running.length <= maxLines;
+    const prefix = isLast ? '└─' : '├─';
+
+    const code = getAgentCode(a.type, a.model);
+    const color = getModelTierColor(a.model);
+    const shortName = getShortAgentName(a.type).padEnd(12);
+
+    const durationMs = now - a.startTime.getTime();
+    const duration = formatDurationPadded(durationMs);
+    const durationColor = getDurationColor(durationMs);
+
+    const desc = a.description || '...';
+    const truncatedDesc = desc.length > 45 ? desc.slice(0, 42) + '...' : desc;
+
+    detailLines.push(
+      `${dim(prefix)} ${color}${code}${RESET} ${dim(shortName)}${durationColor}${duration}${RESET}  ${truncatedDesc}`
+    );
+  });
+
+  // Add overflow indicator if needed
+  if (running.length > maxLines) {
+    const remaining = running.length - maxLines;
+    detailLines.push(`${dim(`└─ +${remaining} more agents...`)}`);
+  }
+
+  return { headerPart, detailLines };
+}
+
+/**
  * Render agents based on format configuration.
  */
 export function renderAgentsByFormat(
@@ -342,6 +424,10 @@ export function renderAgentsByFormat(
       return renderAgentsWithDescriptions(agents);
     case 'tasks':
       return renderAgentsDescOnly(agents);
+    case 'multiline':
+      // For backward compatibility, return just the header part
+      // The render.ts will handle the full multi-line output
+      return renderAgentsMultiLine(agents).headerPart;
     default:
       return renderAgentsCoded(agents);
   }
