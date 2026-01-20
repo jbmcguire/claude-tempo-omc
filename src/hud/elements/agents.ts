@@ -111,6 +111,13 @@ export function renderAgents(agents: ActiveAgent[]): string | null {
 }
 
 /**
+ * Sort agents by start time (freshest first, oldest last)
+ */
+function sortByFreshest(agents: ActiveAgent[]): ActiveAgent[] {
+  return [...agents].sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+}
+
+/**
  * Render agents with single-character type codes.
  * Uppercase = Opus tier, lowercase = Sonnet/Haiku.
  * Color-coded by model tier.
@@ -118,7 +125,7 @@ export function renderAgents(agents: ActiveAgent[]): string | null {
  * Format: agents:Oes
  */
 export function renderAgentsCoded(agents: ActiveAgent[]): string | null {
-  const running = agents.filter((a) => a.status === 'running');
+  const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
     return null;
@@ -141,7 +148,7 @@ export function renderAgentsCoded(agents: ActiveAgent[]): string | null {
  * Format: agents:O(2m)es
  */
 export function renderAgentsCodedWithDuration(agents: ActiveAgent[]): string | null {
-  const running = agents.filter((a) => a.status === 'running');
+  const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
     return null;
@@ -180,7 +187,7 @@ export function renderAgentsCodedWithDuration(agents: ActiveAgent[]): string | n
  * Format: agents:[oracle(2m),explore,sj]
  */
 export function renderAgentsDetailed(agents: ActiveAgent[]): string | null {
-  const running = agents.filter((a) => a.status === 'running');
+  const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
     return null;
@@ -256,7 +263,7 @@ function getShortAgentName(agentType: string): string {
  * Format: O:analyzing code | e:searching files
  */
 export function renderAgentsWithDescriptions(agents: ActiveAgent[]): string | null {
-  const running = agents.filter((a) => a.status === 'running');
+  const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
     return null;
@@ -294,7 +301,7 @@ export function renderAgentsWithDescriptions(agents: ActiveAgent[]): string | nu
  * Format: [analyzing code, searching files]
  */
 export function renderAgentsDescOnly(agents: ActiveAgent[]): string | null {
-  const running = agents.filter((a) => a.status === 'running');
+  const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
     return null;
@@ -361,7 +368,7 @@ export function renderAgentsMultiLine(
   agents: ActiveAgent[],
   maxLines: number = 5
 ): MultiLineRenderResult {
-  const running = agents.filter((a) => a.status === 'running');
+  const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
     return { headerPart: null, detailLines: [] };
