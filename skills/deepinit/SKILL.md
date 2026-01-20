@@ -1,6 +1,7 @@
 ---
 name: deepinit
 description: Deep codebase initialization with hierarchical AGENTS.md documentation
+user-invocable: true
 ---
 
 # Deep Init Skill
@@ -84,7 +85,7 @@ This creates a navigable hierarchy:
 ### Step 1: Map Directory Structure
 
 ```
-Task(subagent_type="explore",
+Task(subagent_type="explore", model="haiku",
   prompt="List all directories recursively. Exclude: node_modules, .git, dist, build, __pycache__, .venv, coverage, .next, .nuxt")
 ```
 
@@ -151,9 +152,9 @@ grep -r "<!-- Parent:" --include="AGENTS.md" .
 | Task | Agent |
 |------|-------|
 | Directory mapping | `explore` |
-| File analysis | `oracle-low` |
-| Content generation | `document-writer` |
-| Multi-file writes | `sisyphus-junior` |
+| File analysis | `architect-low` |
+| Content generation | `writer` |
+| Multi-file writes | `executor` |
 
 ## Empty Directory Handling
 

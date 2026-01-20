@@ -1,5 +1,5 @@
 /**
- * Ralph Loop Hook
+ * Ralph Hook
  *
  * Self-referential work loop that continues until a completion promise is detected.
  * Named after the character who keeps working until the job is done.
@@ -7,7 +7,7 @@
  * Enhanced with PRD (Product Requirements Document) support for structured task tracking.
  * When a prd.json exists, completion is based on all stories having passes: true.
  *
- * Ported from oh-my-opencode's ralph-loop hook.
+ * Ported from oh-my-opencode's ralph hook.
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
@@ -30,8 +30,8 @@ import {
 
 // Forward declaration to avoid circular import - check ultraqa state file directly
 export function isUltraQAActive(directory: string): boolean {
-  const sisyphusDir = join(directory, '.sisyphus');
-  const stateFile = join(sisyphusDir, 'ultraqa-state.json');
+  const omcDir = join(directory, '.omc');
+  const stateFile = join(omcDir, 'ultraqa-state.json');
   if (!existsSync(stateFile)) {
     return false;
   }
@@ -63,6 +63,21 @@ export interface RalphLoopState {
   prd_mode?: boolean;
   /** Current story being worked on */
   current_story_id?: string;
+  /** Whether ultrawork is linked/auto-activated with ralph */
+  linked_ultrawork?: boolean;
+}
+
+export interface UltraworkState {
+  /** Whether ultrawork is currently active */
+  active: boolean;
+  /** Reinforcement count for persistence */
+  reinforcement_count: number;
+  /** Original prompt/task */
+  original_prompt: string;
+  /** When started */
+  started_at: string;
+  /** Whether linked to ralph (auto-activated) */
+  linked_to_ralph?: boolean;
 }
 
 export interface RalphLoopOptions {
@@ -70,6 +85,8 @@ export interface RalphLoopOptions {
   maxIterations?: number;
   /** Custom completion promise (default: "TASK_COMPLETE") */
   completionPromise?: string;
+  /** Disable auto-activation of ultrawork (default: false - ultrawork is enabled) */
+  disableUltrawork?: boolean;
 }
 
 export interface RalphLoopHook {
@@ -85,17 +102,17 @@ const DEFAULT_COMPLETION_PROMISE = 'TASK_COMPLETE';
  * Get the state file path for Ralph Loop
  */
 function getStateFilePath(directory: string): string {
-  const sisyphusDir = join(directory, '.sisyphus');
-  return join(sisyphusDir, 'ralph-state.json');
+  const omcDir = join(directory, '.omc');
+  return join(omcDir, 'ralph-state.json');
 }
 
 /**
- * Ensure the .sisyphus directory exists
+ * Ensure the .omc directory exists
  */
 function ensureStateDir(directory: string): void {
-  const sisyphusDir = join(directory, '.sisyphus');
-  if (!existsSync(sisyphusDir)) {
-    mkdirSync(sisyphusDir, { recursive: true });
+  const omcDir = join(directory, '.omc');
+  if (!existsSync(omcDir)) {
+    mkdirSync(omcDir, { recursive: true });
   }
 }
 
@@ -141,6 +158,66 @@ export function clearRalphState(directory: string): boolean {
     return true;
   }
 
+  try {
+    unlinkSync(stateFile);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get ultrawork state file path
+ */
+function getUltraworkStateFilePath(directory: string): string {
+  const omcDir = join(directory, '.omc');
+  return join(omcDir, 'ultrawork-state.json');
+}
+
+/**
+ * Write ultrawork state to disk
+ */
+export function writeUltraworkState(directory: string, state: UltraworkState): boolean {
+  try {
+    ensureStateDir(directory);
+    const stateFile = getUltraworkStateFilePath(directory);
+    writeFileSync(stateFile, JSON.stringify(state, null, 2));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Read ultrawork state from disk
+ */
+export function readUltraworkState(directory: string): UltraworkState | null {
+  const stateFile = getUltraworkStateFilePath(directory);
+
+  if (!existsSync(stateFile)) {
+    return null;
+  }
+
+  try {
+    const content = readFileSync(stateFile, 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Clear ultrawork state (only if linked to ralph)
+ */
+export function clearLinkedUltraworkState(directory: string): boolean {
+  const state = readUltraworkState(directory);
+
+  // Only clear if it was linked to ralph (auto-activated)
+  if (!state || !state.linked_to_ralph) {
+    return true;
+  }
+
+  const stateFile = getUltraworkStateFilePath(directory);
   try {
     unlinkSync(stateFile);
     return true;
@@ -218,21 +295,39 @@ export function createRalphLoopHook(directory: string): RalphLoopHook {
   ): boolean => {
     // Mutual exclusion check: cannot start Ralph Loop if UltraQA is active
     if (isUltraQAActive(directory)) {
-      console.error('Cannot start Ralph Loop while UltraQA is active. Cancel UltraQA first with /cancel-ultraqa.');
+      console.error('Cannot start Ralph Loop while UltraQA is active. Cancel UltraQA first with /oh-my-claudecode:cancel-ultraqa.');
       return false;
     }
+
+    const enableUltrawork = !options?.disableUltrawork;
+    const now = new Date().toISOString();
 
     const state: RalphLoopState = {
       active: true,
       iteration: 1,
       max_iterations: options?.maxIterations ?? DEFAULT_MAX_ITERATIONS,
       completion_promise: options?.completionPromise ?? DEFAULT_COMPLETION_PROMISE,
-      started_at: new Date().toISOString(),
+      started_at: now,
       prompt,
-      session_id: sessionId
+      session_id: sessionId,
+      linked_ultrawork: enableUltrawork
     };
 
-    return writeRalphState(directory, state);
+    const ralphSuccess = writeRalphState(directory, state);
+
+    // Auto-activate ultrawork (linked to ralph) by default
+    if (ralphSuccess && enableUltrawork) {
+      const ultraworkState: UltraworkState = {
+        active: true,
+        reinforcement_count: 0,
+        original_prompt: prompt,
+        started_at: now,
+        linked_to_ralph: true
+      };
+      writeUltraworkState(directory, ultraworkState);
+    }
+
+    return ralphSuccess;
   };
 
   const cancelLoop = (sessionId: string): boolean => {
@@ -240,6 +335,11 @@ export function createRalphLoopHook(directory: string): RalphLoopHook {
 
     if (!state || state.session_id !== sessionId) {
       return false;
+    }
+
+    // Also clear linked ultrawork state if it was auto-activated
+    if (state.linked_ultrawork) {
+      clearLinkedUltraworkState(directory);
     }
 
     return clearRalphState(directory);
@@ -269,7 +369,7 @@ export function hasPrd(directory: string): boolean {
 }
 
 /**
- * Get PRD completion status for ralph-loop
+ * Get PRD completion status for ralph
  */
 export function getPrdCompletionStatus(directory: string): {
   hasPrd: boolean;
@@ -299,7 +399,7 @@ export function getPrdCompletionStatus(directory: string): {
 }
 
 /**
- * Get context injection for ralph-loop continuation
+ * Get context injection for ralph continuation
  * Includes PRD current story and progress memory
  */
 export function getRalphContext(directory: string): string {
@@ -381,7 +481,7 @@ export function recordPattern(directory: string, pattern: string): boolean {
 }
 
 /**
- * Check if ralph-loop should complete based on PRD status
+ * Check if ralph should complete based on PRD status
  */
 export function shouldCompleteByPrd(directory: string): boolean {
   const status = getPrdCompletionStatus(directory);

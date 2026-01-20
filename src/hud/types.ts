@@ -1,0 +1,350 @@
+/**
+ * Sisyphus HUD Type Definitions
+ *
+ * Type definitions for the HUD state, configuration, and rendering.
+ */
+
+// ============================================================================
+// HUD State
+// ============================================================================
+
+export interface BackgroundTask {
+  id: string;
+  description: string;
+  agentType?: string;
+  startedAt: string;
+  completedAt?: string;
+  status: 'running' | 'completed' | 'failed';
+}
+
+export interface SisyphusHudState {
+  timestamp: string;
+  backgroundTasks: BackgroundTask[];
+}
+
+// ============================================================================
+// Stdin from Claude Code
+// ============================================================================
+
+export interface StatuslineStdin {
+  /** Transcript path for parsing conversation history */
+  transcript_path: string;
+
+  /** Current working directory */
+  cwd: string;
+
+  /** Model information */
+  model: {
+    id: string;
+    display_name: string;
+  };
+
+  /** Context window metrics */
+  context_window: {
+    context_window_size: number;
+    used_percentage?: number;
+    current_usage?: {
+      input_tokens: number;
+      cache_creation_input_tokens: number;
+      cache_read_input_tokens: number;
+    };
+  };
+}
+
+// ============================================================================
+// Transcript Parsing Results
+// ============================================================================
+
+export interface TodoItem {
+  content: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  activeForm?: string;
+}
+
+export interface ActiveAgent {
+  id: string;
+  type: string;
+  model?: string;
+  description?: string;
+  status: 'running' | 'completed';
+  startTime: Date;
+  endTime?: Date;
+}
+
+export interface SkillInvocation {
+  name: string;
+  args?: string;
+  timestamp: Date;
+}
+
+export interface PendingPermission {
+  toolName: string;       // "Edit", "Bash", etc. (proxy_ prefix stripped)
+  targetSummary: string;  // "src/main.ts" or "npm install"
+  timestamp: Date;
+}
+
+export interface ThinkingState {
+  active: boolean;
+  lastSeen?: Date;
+}
+
+export interface SessionHealth {
+  durationMinutes: number;
+  messageCount: number;
+  health: 'healthy' | 'warning' | 'critical';
+}
+
+export interface TranscriptData {
+  agents: ActiveAgent[];
+  todos: TodoItem[];
+  sessionStart?: Date;
+  lastActivatedSkill?: SkillInvocation;
+  pendingPermission?: PendingPermission;
+  thinkingState?: ThinkingState;
+}
+
+// ============================================================================
+// Sisyphus State Types (read from existing files)
+// ============================================================================
+
+export interface RalphStateForHud {
+  active: boolean;
+  iteration: number;
+  maxIterations: number;
+  prdMode?: boolean;
+  currentStoryId?: string;
+}
+
+export interface UltraworkStateForHud {
+  active: boolean;
+  reinforcementCount: number;
+}
+
+export interface PrdStateForHud {
+  currentStoryId: string | null;
+  completed: number;
+  total: number;
+}
+
+// ============================================================================
+// Render Context
+// ============================================================================
+
+export interface RateLimits {
+  /** 5-hour rolling window usage percentage (0-100) */
+  fiveHourPercent: number;
+  /** Weekly usage percentage (0-100) */
+  weeklyPercent: number;
+}
+
+export interface HudRenderContext {
+  /** Context window percentage (0-100) */
+  contextPercent: number;
+
+  /** Model display name */
+  modelName: string;
+
+  /** Ralph loop state */
+  ralph: RalphStateForHud | null;
+
+  /** Ultrawork state */
+  ultrawork: UltraworkStateForHud | null;
+
+  /** PRD state */
+  prd: PrdStateForHud | null;
+
+  /** Active subagents from transcript */
+  activeAgents: ActiveAgent[];
+
+  /** Todo list from transcript */
+  todos: TodoItem[];
+
+  /** Background tasks from HUD state */
+  backgroundTasks: BackgroundTask[];
+
+  /** Working directory */
+  cwd: string;
+
+  /** Last activated skill from transcript */
+  lastSkill: SkillInvocation | null;
+
+  /** Rate limits (5h and weekly) */
+  rateLimits: RateLimits | null;
+
+  /** Pending permission state (heuristic-based) */
+  pendingPermission: PendingPermission | null;
+
+  /** Extended thinking state */
+  thinkingState: ThinkingState | null;
+
+  /** Session health metrics */
+  sessionHealth: SessionHealth | null;
+}
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+export type HudPreset = 'minimal' | 'focused' | 'full' | 'opencode' | 'dense';
+
+/**
+ * Agent display format options:
+ * - count: agents:2
+ * - codes: agents:Oes (type-coded with model tier casing)
+ * - codes-duration: agents:O(2m)es (codes with duration)
+ * - detailed: agents:[architect(2m),explore,exec]
+ * - descriptions: O:analyzing code | e:searching (codes + what they're doing)
+ * - tasks: [analyzing code, searching...] (just descriptions - most readable)
+ * - multiline: Multi-line display with full agent details on separate lines
+ */
+export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks' | 'multiline';
+
+export interface HudElementConfig {
+  omcLabel: boolean;
+  rateLimits: boolean;  // Show 5h and weekly rate limits
+  ralph: boolean;
+  prdStory: boolean;
+  activeSkills: boolean;
+  lastSkill: boolean;
+  contextBar: boolean;
+  agents: boolean;
+  agentsFormat: AgentsFormat;
+  agentsMaxLines: number;  // Max agent detail lines for multiline format (default: 5)
+  backgroundTasks: boolean;
+  todos: boolean;
+  permissionStatus: boolean;  // Show pending permission indicator
+  thinking: boolean;          // Show extended thinking indicator
+  sessionHealth: boolean;     // Show session health/duration
+}
+
+export interface HudThresholds {
+  /** Context percentage that triggers warning color (default: 70) */
+  contextWarning: number;
+  /** Context percentage that triggers compact suggestion (default: 80) */
+  contextCompactSuggestion: number;
+  /** Context percentage that triggers critical color (default: 85) */
+  contextCritical: number;
+  /** Ralph iteration that triggers warning color (default: 7) */
+  ralphWarning: number;
+}
+
+export interface HudConfig {
+  preset: HudPreset;
+  elements: HudElementConfig;
+  thresholds: HudThresholds;
+}
+
+export const DEFAULT_HUD_CONFIG: HudConfig = {
+  preset: 'focused',
+  elements: {
+    omcLabel: true,
+    rateLimits: true,  // Show rate limits by default
+    ralph: true,
+    prdStory: true,
+    activeSkills: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'multiline', // Multi-line for rich agent visualization
+    agentsMaxLines: 5, // Show up to 5 agent detail lines
+    backgroundTasks: true,
+    todos: true,
+    lastSkill: true,
+    permissionStatus: false,  // Disabled: heuristic-based, causes false positives
+    thinking: true,
+    sessionHealth: true,
+  },
+  thresholds: {
+    contextWarning: 70,
+    contextCompactSuggestion: 80,
+    contextCritical: 85,
+    ralphWarning: 7,
+  },
+};
+
+export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
+  minimal: {
+    omcLabel: true,
+    rateLimits: true,
+    ralph: true,
+    prdStory: false,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: false,
+    agents: true,
+    agentsFormat: 'count', // Just count for minimal mode
+    agentsMaxLines: 0,
+    backgroundTasks: false,
+    todos: true,
+    permissionStatus: false,
+    thinking: false,
+    sessionHealth: false,
+  },
+  focused: {
+    omcLabel: true,
+    rateLimits: true,
+    ralph: true,
+    prdStory: true,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'multiline', // Multi-line for rich visualization
+    agentsMaxLines: 3, // Show up to 3 agents
+    backgroundTasks: true,
+    todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
+  },
+  full: {
+    omcLabel: true,
+    rateLimits: true,
+    ralph: true,
+    prdStory: true,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'multiline', // Multi-line with more details
+    agentsMaxLines: 10, // Show many agents in full mode
+    backgroundTasks: true,
+    todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
+  },
+  opencode: {
+    omcLabel: true,
+    rateLimits: false,
+    ralph: true,
+    prdStory: false,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'codes',
+    agentsMaxLines: 0,
+    backgroundTasks: false,
+    todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
+  },
+  dense: {
+    omcLabel: true,
+    rateLimits: true,
+    ralph: true,
+    prdStory: true,
+    activeSkills: true,
+    lastSkill: true,
+    contextBar: true,
+    agents: true,
+    agentsFormat: 'multiline',
+    agentsMaxLines: 5,
+    backgroundTasks: true,
+    todos: true,
+    permissionStatus: false,  // Disabled: heuristic unreliable
+    thinking: true,
+    sessionHealth: true,
+  },
+};

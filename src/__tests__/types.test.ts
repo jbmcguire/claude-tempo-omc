@@ -55,14 +55,14 @@ describe('Type Tests', () => {
     it('should support agent configuration', () => {
       const config: PluginConfig = {
         agents: {
-          sisyphus: { model: 'claude-sonnet-4-5' },
-          oracle: { model: 'claude-opus-4-5', enabled: true },
-          librarian: { model: 'claude-haiku-4-5' },
+          omc: { model: 'claude-sonnet-4-5' },
+          architect: { model: 'claude-opus-4-5', enabled: true },
+          researcher: { model: 'claude-haiku-4-5' },
         },
       };
 
-      expect(config.agents?.sisyphus?.model).toBe('claude-sonnet-4-5');
-      expect(config.agents?.oracle?.enabled).toBe(true);
+      expect(config.agents?.omc?.model).toBe('claude-sonnet-4-5');
+      expect(config.agents?.architect?.enabled).toBe(true);
     });
 
     it('should support routing configuration', () => {

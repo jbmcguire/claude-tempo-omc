@@ -5,6 +5,126 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-01-20
+
+### 🎨 Complete Rebrand - From Mythology to Intuition
+
+This is a **breaking release** that renames the entire project and all agent names for clarity and accessibility.
+
+### Breaking Changes
+
+- **Package Renamed**: `oh-my-claude-sisyphus` → `oh-my-claudecode`
+  - Installation: `npx oh-my-claudecode install` (previously `npx oh-my-claude-sisyphus install`)
+  - All references updated in documentation and code
+
+- **Agent Names Changed**: Greek mythology → Intuitive names
+  - `prometheus` → `planner` (strategic planning)
+  - `momus` → `critic` (plan review)
+  - `oracle` → `architect` (architecture & debugging)
+  - `metis` → `analyst` (pre-planning analysis)
+  - `mnemosyne` → `learner` (learned skills system)
+  - `sisyphus-junior` → `executor` (focused execution)
+  - `librarian` → `researcher` (documentation research)
+  - `frontend-engineer` → `designer` (UI/UX work)
+  - `document-writer` → `writer` (technical documentation)
+  - `multimodal-looker` → `vision` (visual analysis)
+  - `orchestrator-sisyphus` → `orchestrator` (task coordination)
+
+- **Directory Structure**: `.sisyphus/` → `.omc/` (oh-my-claudecode)
+  - State files now in `~/.claude/.omc/`
+  - Runtime plans in `.omc/plans/`
+  - Session notes in `.omc/notepads/`
+
+- **Environment Variables**: `SISYPHUS_*` → `OMC_*`
+  - All environment variable prefixes updated for consistency
+
+- **Slash Commands Updated**: Agent-referencing commands now use new names
+  - `/plan` now uses `planner` agent (was `prometheus`)
+  - `/review` now uses `critic` agent (was `momus`)
+  - `/mnemosyne` → `/learner` for skill extraction
+
+### Migration Guide
+
+For existing users upgrading from 2.x:
+
+1. **Reinstall**: Run `npx oh-my-claudecode install` to update hooks and configs
+2. **State Migration**: Old `.sisyphus/` directories will continue to work, but new state saves to `.omc/`
+3. **Agent References**: Update any custom scripts/configs that referenced old agent names
+4. **Environment Variables**: Rename any `SISYPHUS_*` variables to `OMC_*`
+
+### Rationale
+
+The Greek mythology naming convention, while elegant, created barriers for new users:
+- Non-obvious agent purposes ("What does Prometheus do?")
+- Cultural accessibility concerns
+- Increased cognitive load for remembering agent roles
+
+The new intuitive names (`planner`, `architect`, `critic`) make the system immediately understandable.
+
+### Note on Historical Entries
+
+All changelog entries below v3.0.0 reference the old names (`prometheus`, `sisyphus-junior`, etc.) - this is intentional and accurate for those versions.
+
+---
+
+## [3.0.0-beta] - 2026-01-19
+
+### 🧠 Mnemosyne - Learned Skills System (Major Feature)
+
+Named after the Greek Titan goddess of memory, **Mnemosyne** enables Claude to extract, store, and automatically reuse knowledge from problem-solving sessions.
+
+### 📊 Sisyphus HUD - Multi-Agent Statusline (Major Feature)
+
+Real-time visualization of the Sisyphus orchestration system via Claude Code's statusline.
+
+### Added
+
+- **Mnemosyne - Learned Skills** (`src/hooks/mnemosyne/`)
+  - `/mnemosyne` command to extract reusable skills from conversations
+  - Automatic skill injection based on trigger keywords in user messages
+  - **Hybrid storage**: User-level (`~/.claude/skills/sisyphus-learned/`) + Project-level (`.sisyphus/skills/`)
+  - YAML frontmatter format for skill metadata (triggers, tags, quality scores)
+  - Quality gate validation for skill extraction
+  - Pattern detection for extractable moments (problem-solution, technique, workaround, optimization)
+  - Promotion from ralph-progress learnings to skills
+  - Configuration system with `~/.claude/sisyphus/mnemosyne.json`
+  - `skill-injector.mjs` hook for UserPromptSubmit
+
+- **Sisyphus HUD Statusline** (`src/features/hud/`)
+  - Real-time statusline showing system state
+  - **Display presets**: minimal, focused (default), full
+  - **Elements**: ralph loop progress, PRD story, ultrawork status, context usage, agents, background tasks, todos
+  - **Color coding**: Green (healthy), Yellow (warning), Red (critical)
+  - `/hud` command to configure display options
+  - Auto-refresh every ~300ms during active sessions
+  - Type-coded agent visualization with model tier colors
+
+- **New Commands**
+  - `/mnemosyne` - Extract learned skills from current conversation
+  - `/hud [preset]` - Configure HUD display (minimal/focused/full)
+  - `/hud status` - Show detailed HUD status
+
+- **New Test Suites**
+  - `src/__tests__/mnemosyne/` - 41 tests for learned skills system
+  - `src/__tests__/hud-agents.test.ts` - 44 tests for HUD agents
+  - Total: **443 tests** (up from 399)
+
+### Changed
+
+- **Module Naming**: Adopted Greek mythology naming convention
+  - `learned-skills` → `mnemosyne` (goddess of memory)
+  - Exports: `Claudeception*` → `Mnemosyne*`
+
+- **Context Injector**: Added `mnemosyne` as a context source type
+
+### Breaking Changes
+
+- Renamed `/claudeception` to `/mnemosyne`
+- Renamed config from `claudeception.json` to `mnemosyne.json`
+- Module path changed from `hooks/learned-skills` to `hooks/mnemosyne`
+
+---
+
 ## [2.6.1] - 2026-01-19
 
 ### Added

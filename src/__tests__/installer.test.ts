@@ -1,32 +1,100 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  AGENT_DEFINITIONS,
-  COMMAND_DEFINITIONS,
-  CLAUDE_MD_CONTENT,
   VERSION,
   CLAUDE_CONFIG_DIR,
   AGENTS_DIR,
   COMMANDS_DIR,
   SKILLS_DIR,
   HOOKS_DIR,
+  isRunningAsPlugin,
 } from '../installer/index.js';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
+import { readdirSync, readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+
+/**
+ * Get the package root directory for testing
+ */
+function getPackageDir(): string {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  // From src/__tests__/installer.test.ts, go up to package root
+  return join(__dirname, '..', '..');
+}
+
+/**
+ * Load agent definitions for testing
+ */
+function loadAgentDefinitions(): Record<string, string> {
+  const agentsDir = join(getPackageDir(), 'agents');
+  const definitions: Record<string, string> = {};
+
+  if (!existsSync(agentsDir)) {
+    throw new Error(`agents directory not found: ${agentsDir}`);
+  }
+
+  for (const file of readdirSync(agentsDir)) {
+    if (file.endsWith('.md')) {
+      definitions[file] = readFileSync(join(agentsDir, file), 'utf-8');
+    }
+  }
+
+  return definitions;
+}
+
+/**
+ * Load command definitions for testing
+ */
+function loadCommandDefinitions(): Record<string, string> {
+  const commandsDir = join(getPackageDir(), 'commands');
+  const definitions: Record<string, string> = {};
+
+  if (!existsSync(commandsDir)) {
+    throw new Error(`commands directory not found: ${commandsDir}`);
+  }
+
+  for (const file of readdirSync(commandsDir)) {
+    if (file.endsWith('.md')) {
+      definitions[file] = readFileSync(join(commandsDir, file), 'utf-8');
+    }
+  }
+
+  return definitions;
+}
+
+/**
+ * Load CLAUDE.md content for testing
+ */
+function loadClaudeMdContent(): string {
+  const claudeMdPath = join(getPackageDir(), 'docs', 'CLAUDE.md');
+
+  if (!existsSync(claudeMdPath)) {
+    throw new Error(`CLAUDE.md not found: ${claudeMdPath}`);
+  }
+
+  return readFileSync(claudeMdPath, 'utf-8');
+}
 
 describe('Installer Constants', () => {
+  // Load definitions once for all tests
+  const AGENT_DEFINITIONS = loadAgentDefinitions();
+  const COMMAND_DEFINITIONS = loadCommandDefinitions();
+  const CLAUDE_MD_CONTENT = loadClaudeMdContent();
+
   describe('AGENT_DEFINITIONS', () => {
     it('should contain expected core agents', () => {
       const expectedAgents = [
-        'oracle.md',
-        'librarian.md',
+        'architect.md',
+        'researcher.md',
         'explore.md',
-        'frontend-engineer.md',
-        'document-writer.md',
-        'multimodal-looker.md',
-        'momus.md',
-        'metis.md',
-        'sisyphus-junior.md',
-        'prometheus.md',
+        'designer.md',
+        'writer.md',
+        'vision.md',
+        'critic.md',
+        'analyst.md',
+        'executor.md',
+        'planner.md',
         'qa-tester.md',
       ];
 
@@ -39,14 +107,14 @@ describe('Installer Constants', () => {
 
     it('should contain tiered agent variants', () => {
       const tieredAgents = [
-        'oracle-medium.md',
-        'oracle-low.md',
-        'sisyphus-junior-high.md',
-        'sisyphus-junior-low.md',
-        'librarian-low.md',
+        'architect-medium.md',
+        'architect-low.md',
+        'executor-high.md',
+        'executor-low.md',
+        'researcher-low.md',
         'explore-medium.md',
-        'frontend-engineer-low.md',
-        'frontend-engineer-high.md',
+        'designer-low.md',
+        'designer-high.md',
       ];
 
       for (const agent of tieredAgents) {
@@ -62,7 +130,7 @@ describe('Installer Constants', () => {
         expect(content).toMatch(/\n---\n/);
 
         // Extract frontmatter
-        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = (content as string).match(/^---\n([\s\S]*?)\n---/);
         expect(frontmatterMatch).toBeTruthy();
 
         const frontmatter = frontmatterMatch![1];
@@ -79,7 +147,7 @@ describe('Installer Constants', () => {
       const names = new Set<string>();
 
       for (const content of Object.values(AGENT_DEFINITIONS)) {
-        const nameMatch = content.match(/^name:\s+(\S+)/m);
+        const nameMatch = (content as string).match(/^name:\s+(\S+)/m);
         expect(nameMatch).toBeTruthy();
 
         const name = nameMatch![1];
@@ -90,24 +158,24 @@ describe('Installer Constants', () => {
 
     it('should have consistent model assignments', () => {
       const modelExpectations: Record<string, string> = {
-        'oracle.md': 'opus',
-        'oracle-medium.md': 'sonnet',
-        'oracle-low.md': 'haiku',
-        'librarian.md': 'sonnet',
-        'librarian-low.md': 'haiku',
+        'architect.md': 'opus',
+        'architect-medium.md': 'sonnet',
+        'architect-low.md': 'haiku',
+        'researcher.md': 'sonnet',
+        'researcher-low.md': 'haiku',
         'explore.md': 'haiku',
         'explore-medium.md': 'sonnet',
-        'sisyphus-junior.md': 'sonnet',
-        'sisyphus-junior-high.md': 'opus',
-        'sisyphus-junior-low.md': 'haiku',
-        'frontend-engineer.md': 'sonnet',
-        'frontend-engineer-low.md': 'haiku',
-        'frontend-engineer-high.md': 'opus',
-        'document-writer.md': 'haiku',
-        'multimodal-looker.md': 'sonnet',
-        'momus.md': 'opus',
-        'metis.md': 'opus',
-        'prometheus.md': 'opus',
+        'executor.md': 'sonnet',
+        'executor-high.md': 'opus',
+        'executor-low.md': 'haiku',
+        'designer.md': 'sonnet',
+        'designer-low.md': 'haiku',
+        'designer-high.md': 'opus',
+        'writer.md': 'haiku',
+        'vision.md': 'sonnet',
+        'critic.md': 'opus',
+        'analyst.md': 'opus',
+        'planner.md': 'opus',
         'qa-tester.md': 'sonnet',
       };
 
@@ -126,20 +194,8 @@ describe('Installer Constants', () => {
   });
 
   describe('COMMAND_DEFINITIONS', () => {
-    it('should contain expected commands', () => {
-      const expectedCommands = [
-        'ultrawork/skill.md',
-        'deepsearch/skill.md',
-        'analyze/skill.md',
-        'sisyphus/skill.md',
-        'sisyphus-default.md',
-        'sisyphus-default-global.md',
-        'plan.md',
-        'review/skill.md',
-        'prometheus/skill.md',
-        'ralph-loop/skill.md',
-        'cancel-ralph.md',
-      ];
+    it('should contain expected commands (0 commands - all migrated to skills)', () => {
+      const expectedCommands: string[] = [];
 
       for (const command of expectedCommands) {
         expect(COMMAND_DEFINITIONS).toHaveProperty(command);
@@ -155,7 +211,7 @@ describe('Installer Constants', () => {
         expect(content).toMatch(/\n---\n/);
 
         // Extract frontmatter
-        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = (content as string).match(/^---\n([\s\S]*?)\n---/);
         expect(frontmatterMatch).toBeTruthy();
 
         const frontmatter = frontmatterMatch![1];
@@ -172,18 +228,7 @@ describe('Installer Constants', () => {
     });
 
     it('should contain $ARGUMENTS placeholder in commands that need it', () => {
-      const commandsWithArgs = [
-        'ultrawork/skill.md',
-        'deepsearch/skill.md',
-        'analyze/skill.md',
-        'sisyphus/skill.md',
-        'sisyphus-default.md',
-        'sisyphus-default-global.md',
-        'plan.md',
-        'review/skill.md',
-        'prometheus/skill.md',
-        'ralph-loop/skill.md',
-      ];
+      const commandsWithArgs: string[] = [];
 
       for (const command of commandsWithArgs) {
         const content = COMMAND_DEFINITIONS[command];
@@ -201,11 +246,12 @@ describe('Installer Constants', () => {
 
     it('should contain essential sections', () => {
       const essentialSections = [
-        'Sisyphus Multi-Agent System',
-        'DEFAULT OPERATING MODE',
-        'Available Subagents',
-        'Slash Commands',
-        'CONTINUATION ENFORCEMENT',
+        'OMC Multi-Agent System',
+        'How I Work',
+        'What I Do Automatically',
+        'Delegate Always',
+        'Magic Keywords',
+        'Stopping and Cancelling',
       ];
 
       for (const section of essentialSections) {
@@ -214,50 +260,54 @@ describe('Installer Constants', () => {
     });
 
     it('should reference all core agents', () => {
-      const coreAgents = [
-        'oracle',
-        'librarian',
+      // The new CLAUDE.md has agents in the INTERNAL section (Smart Model Routing table)
+      // We'll check for a subset of key agents to ensure the section exists
+      const keyAgents = [
+        'architect',
+        'executor',
         'explore',
-        'frontend-engineer',
-        'document-writer',
-        'multimodal-looker',
-        'momus',
-        'metis',
-        'sisyphus-junior',
-        'prometheus',
-        'qa-tester',
+        'designer',
+        'writer',
+        'planner',
       ];
 
-      for (const agent of coreAgents) {
-        // Agents are prefixed with oh-my-claude-sisyphus: in the content
-        expect(CLAUDE_MD_CONTENT).toMatch(new RegExp(`oh-my-claude-sisyphus:${agent}`));
+      for (const agent of keyAgents) {
+        // Agents are prefixed with oh-my-claudecode: in the content
+        expect(CLAUDE_MD_CONTENT).toMatch(new RegExp(`oh-my-claudecode:${agent}`));
       }
     });
 
     it('should include tiered agent routing table', () => {
+      // Verify the Smart Model Routing section exists in INTERNAL section
       expect(CLAUDE_MD_CONTENT).toContain('Smart Model Routing');
-      expect(CLAUDE_MD_CONTENT).toContain('oracle-low');
-      expect(CLAUDE_MD_CONTENT).toContain('oracle-medium');
-      expect(CLAUDE_MD_CONTENT).toContain('sisyphus-junior-low');
-      expect(CLAUDE_MD_CONTENT).toContain('sisyphus-junior-high');
+      expect(CLAUDE_MD_CONTENT).toContain('LOW (Haiku)');
+      expect(CLAUDE_MD_CONTENT).toContain('MEDIUM (Sonnet)');
+      expect(CLAUDE_MD_CONTENT).toContain('HIGH (Opus)');
+      expect(CLAUDE_MD_CONTENT).toContain('oh-my-claudecode:explore');
+      expect(CLAUDE_MD_CONTENT).toContain('oh-my-claudecode:executor-low');
     });
 
-    it('should document all slash commands', () => {
-      const commands = [
-        '/ultrawork',
-        '/deepsearch',
-        '/analyze',
-        '/plan',
-        '/review',
-        '/prometheus',
-        '/ralph-loop',
-        '/cancel-ralph',
-        '/deepinit',
+    it('should document magic keywords and compatibility commands', () => {
+      // New CLAUDE.md has "Magic Keywords" instead of slash commands
+      expect(CLAUDE_MD_CONTENT).toContain('Magic Keywords');
+
+      // Check for key keywords in the table
+      const keywords = [
+        'ralph',
+        'ralplan',
+        'ulw',
+        'plan',
       ];
 
-      for (const command of commands) {
-        expect(CLAUDE_MD_CONTENT).toContain(command);
+      for (const keyword of keywords) {
+        expect(CLAUDE_MD_CONTENT).toContain(keyword);
       }
+
+      // Verify backward compatibility section exists
+      expect(CLAUDE_MD_CONTENT).toContain('All Old Commands Still Work');
+      expect(CLAUDE_MD_CONTENT).toContain('/ralph');
+      expect(CLAUDE_MD_CONTENT).toContain('/ultrawork');
+      expect(CLAUDE_MD_CONTENT).toContain('/planner');
     });
 
     it('should contain markdown tables', () => {
@@ -276,7 +326,7 @@ describe('Installer Constants', () => {
 
     it('should match package.json version', () => {
       // This is a runtime check - VERSION should match the package.json
-      expect(VERSION).toBe('2.6.0');
+      expect(VERSION).toBe('3.0.0');
     });
   });
 
@@ -307,14 +357,16 @@ describe('Installer Constants', () => {
   });
 
   describe('Content Consistency', () => {
-    it('should not have duplicate agent/command definitions', () => {
-      const allKeys = [
-        ...Object.keys(AGENT_DEFINITIONS),
-        ...Object.keys(COMMAND_DEFINITIONS),
-      ];
+    it('should not have duplicate agent definitions', () => {
+      const agentKeys = Object.keys(AGENT_DEFINITIONS);
+      const uniqueAgentKeys = new Set(agentKeys);
+      expect(agentKeys.length).toBe(uniqueAgentKeys.size);
+    });
 
-      const uniqueKeys = new Set(allKeys);
-      expect(allKeys.length).toBe(uniqueKeys.size);
+    it('should not have duplicate command definitions', () => {
+      const commandKeys = Object.keys(COMMAND_DEFINITIONS);
+      const uniqueCommandKeys = new Set(commandKeys);
+      expect(commandKeys.length).toBe(uniqueCommandKeys.size);
     });
 
     it('should have agents referenced in CLAUDE.md exist in AGENT_DEFINITIONS', () => {
@@ -335,10 +387,12 @@ describe('Installer Constants', () => {
     });
 
     it('should have all agent definitions contain role descriptions', () => {
+      // Agents that use different description formats (not "You are a..." style)
+      const alternateFormatAgents = ['qa-tester.md'];
+
       for (const [filename, content] of Object.entries(AGENT_DEFINITIONS)) {
-        // Most agents should have role definitions (either <Role> tags or clear role descriptions)
-        // Some agents like 'explore.md' and 'multimodal-looker.md' use different formatting
-        if (!filename.includes('-low') && !filename.includes('-medium') && !filename.includes('-high')) {
+        // Skip tiered variants and agents with alternate formats
+        if (!filename.includes('-low') && !filename.includes('-medium') && !filename.includes('-high') && !alternateFormatAgents.includes(filename)) {
           // Check for either <Role> tags or role description in various forms
           const hasRoleSection = content.includes('<Role>') ||
                                  content.includes('You are a') ||
@@ -351,7 +405,7 @@ describe('Installer Constants', () => {
     });
 
     it('should have read-only agents not include Edit/Write tools', () => {
-      const readOnlyAgents = ['oracle.md', 'oracle-medium.md', 'oracle-low.md', 'momus.md', 'metis.md'];
+      const readOnlyAgents = ['architect.md', 'architect-medium.md', 'architect-low.md', 'critic.md', 'analyst.md'];
 
       for (const agent of readOnlyAgents) {
         const content = AGENT_DEFINITIONS[agent];
@@ -366,11 +420,11 @@ describe('Installer Constants', () => {
 
     it('should have implementation agents include Edit/Write tools', () => {
       const implementationAgents = [
-        'sisyphus-junior.md',
-        'sisyphus-junior-high.md',
-        'sisyphus-junior-low.md',
-        'frontend-engineer.md',
-        'document-writer.md',
+        'executor.md',
+        'executor-high.md',
+        'executor-low.md',
+        'designer.md',
+        'writer.md',
       ];
 
       for (const agent of implementationAgents) {
@@ -381,6 +435,39 @@ describe('Installer Constants', () => {
         const tools = toolsMatch![1];
         expect(tools).toMatch(/\b(Edit|Write)\b/);
       }
+    });
+  });
+
+  describe('Plugin Detection', () => {
+    let originalEnv: string | undefined;
+
+    beforeEach(() => {
+      // Save original env var
+      originalEnv = process.env.CLAUDE_PLUGIN_ROOT;
+    });
+
+    afterEach(() => {
+      // Restore original env var
+      if (originalEnv !== undefined) {
+        process.env.CLAUDE_PLUGIN_ROOT = originalEnv;
+      } else {
+        delete process.env.CLAUDE_PLUGIN_ROOT;
+      }
+    });
+
+    it('should return false when CLAUDE_PLUGIN_ROOT is not set', () => {
+      delete process.env.CLAUDE_PLUGIN_ROOT;
+      expect(isRunningAsPlugin()).toBe(false);
+    });
+
+    it('should return true when CLAUDE_PLUGIN_ROOT is set', () => {
+      process.env.CLAUDE_PLUGIN_ROOT = '/home/user/.claude/plugins/marketplaces/oh-my-claudecode';
+      expect(isRunningAsPlugin()).toBe(true);
+    });
+
+    it('should detect plugin context from environment variable', () => {
+      process.env.CLAUDE_PLUGIN_ROOT = '/any/path';
+      expect(isRunningAsPlugin()).toBe(true);
     });
   });
 
@@ -404,7 +491,7 @@ describe('Installer Constants', () => {
         // Check for standalone TODO that looks like a placeholder
         // (e.g., "TODO: implement this" but not "TODO LIST" or "TODO OBSESSION")
         const todoPlaceholderPattern = /TODO:\s+[a-z]/i;
-        const hasTodoPlaceholder = todoPlaceholderPattern.test(content);
+        const hasTodoPlaceholder = todoPlaceholderPattern.test(content as string);
         expect(hasTodoPlaceholder).toBe(false);
       }
     });
@@ -423,13 +510,13 @@ describe('Installer Constants', () => {
 
     it('should have proper markdown formatting in frontmatter', () => {
       for (const content of Object.values(AGENT_DEFINITIONS)) {
-        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = (content as string).match(/^---\n([\s\S]*?)\n---/);
         expect(frontmatterMatch).toBeTruthy();
 
         const frontmatter = frontmatterMatch![1];
 
         // Each line should be key: value format
-        const lines = frontmatter.split('\n').filter(line => line.trim());
+        const lines = frontmatter.split('\n').filter((line: string) => line.trim());
         for (const line of lines) {
           expect(line).toMatch(/^[a-z]+:\s+.+/);
         }

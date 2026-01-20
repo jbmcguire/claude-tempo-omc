@@ -1,11 +1,20 @@
-import { describe, it, expect } from 'vitest';
-import { createBuiltinSkills, getBuiltinSkill, listBuiltinSkillNames } from '../features/builtin-skills/skills.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { createBuiltinSkills, getBuiltinSkill, listBuiltinSkillNames, clearSkillsCache } from '../features/builtin-skills/skills.js';
 
 describe('Builtin Skills', () => {
+  // Clear cache before each test to ensure fresh loads
+  beforeEach(() => {
+    clearSkillsCache();
+  });
+
   describe('createBuiltinSkills()', () => {
-    it('should return correct number of skills (10)', () => {
+    it('should return correct number of skills (26)', () => {
       const skills = createBuiltinSkills();
-      expect(skills).toHaveLength(10);
+      // 26 skills: analyze, cancel-ralph, cancel-ultraqa, cancel-ultrawork, deepinit,
+      // deepsearch, doctor, frontend-ui-ux, git-master, help, hud, learner, note,
+      // omc-default, omc-default-global, omc-setup, plan, planner, ralplan, ralph-init, ralph,
+      // release, review, orchestrate, ultraqa, ultrawork
+      expect(skills).toHaveLength(26);
     });
 
     it('should return an array of BuiltinSkill objects', () => {
@@ -52,20 +61,35 @@ describe('Builtin Skills', () => {
   });
 
   describe('Skill names', () => {
-    const skills = createBuiltinSkills();
-
     it('should have valid skill names', () => {
+      const skills = createBuiltinSkills();
       const expectedSkills = [
-        'sisyphus',
-        'ralph-loop',
+        'orchestrate',
+        'ralph',
         'ralph-init',
         'frontend-ui-ux',
         'git-master',
         'ultrawork',
         'analyze',
         'deepsearch',
-        'prometheus',
+        'planner',
         'review',
+        'deepinit',
+        'release',
+        'cancel-ralph',
+        'cancel-ultraqa',
+        'cancel-ultrawork',
+        'learner',
+        'plan',
+        'ralplan',
+        'ultraqa',
+        'doctor',
+        'help',
+        'hud',
+        'note',
+        'omc-default',
+        'omc-default-global',
+        'omc-setup',
       ];
 
       const actualSkillNames = skills.map((s) => s.name);
@@ -74,6 +98,7 @@ describe('Builtin Skills', () => {
     });
 
     it('should not have duplicate skill names', () => {
+      const skills = createBuiltinSkills();
       const skillNames = skills.map((s) => s.name);
       const uniqueNames = new Set(skillNames);
       expect(uniqueNames.size).toBe(skillNames.length);
@@ -82,15 +107,15 @@ describe('Builtin Skills', () => {
 
   describe('getBuiltinSkill()', () => {
     it('should retrieve a skill by name', () => {
-      const skill = getBuiltinSkill('sisyphus');
+      const skill = getBuiltinSkill('orchestrate');
       expect(skill).toBeDefined();
-      expect(skill?.name).toBe('sisyphus');
+      expect(skill?.name).toBe('orchestrate');
     });
 
     it('should be case-insensitive', () => {
-      const skillLower = getBuiltinSkill('sisyphus');
-      const skillUpper = getBuiltinSkill('SISYPHUS');
-      const skillMixed = getBuiltinSkill('SiSyPhUs');
+      const skillLower = getBuiltinSkill('orchestrate');
+      const skillUpper = getBuiltinSkill('ORCHESTRATE');
+      const skillMixed = getBuiltinSkill('OrChEsTrAtE');
 
       expect(skillLower).toBeDefined();
       expect(skillUpper).toBeDefined();
@@ -108,17 +133,25 @@ describe('Builtin Skills', () => {
   describe('listBuiltinSkillNames()', () => {
     it('should return all skill names', () => {
       const names = listBuiltinSkillNames();
-      expect(names).toHaveLength(10);
-      expect(names).toContain('sisyphus');
-      expect(names).toContain('ralph-loop');
+      expect(names).toHaveLength(26);
+      expect(names).toContain('orchestrate');
+      expect(names).toContain('ralph');
       expect(names).toContain('ralph-init');
       expect(names).toContain('frontend-ui-ux');
       expect(names).toContain('git-master');
       expect(names).toContain('ultrawork');
       expect(names).toContain('analyze');
       expect(names).toContain('deepsearch');
-      expect(names).toContain('prometheus');
+      expect(names).toContain('planner');
       expect(names).toContain('review');
+      expect(names).toContain('deepinit');
+      expect(names).toContain('release');
+      expect(names).toContain('doctor');
+      expect(names).toContain('help');
+      expect(names).toContain('hud');
+      expect(names).toContain('note');
+      expect(names).toContain('omc-default');
+      expect(names).toContain('omc-default-global');
     });
 
     it('should return an array of strings', () => {

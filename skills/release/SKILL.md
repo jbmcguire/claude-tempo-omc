@@ -1,11 +1,12 @@
 ---
 name: release
-description: Automated release workflow for oh-my-claude-sisyphus
+description: Automated release workflow for oh-my-claudecode
+user-invocable: true
 ---
 
 # Release Skill
 
-Automate the release process for oh-my-claude-sisyphus.
+Automate the release process for oh-my-claudecode.
 
 ## Usage
 
@@ -57,8 +58,8 @@ gh release create v<version> --title "v<version> - <title>" --notes "<release no
 ```
 
 ### 7. Verify
-- [ ] npm: https://www.npmjs.com/package/oh-my-claude-sisyphus
-- [ ] GitHub: https://github.com/Yeachan-Heo/oh-my-claude-sisyphus/releases
+- [ ] npm: https://www.npmjs.com/package/oh-my-claudecode
+- [ ] GitHub: https://github.com/Yeachan-Heo/oh-my-claudecode/releases
 
 ## Version Files Reference
 

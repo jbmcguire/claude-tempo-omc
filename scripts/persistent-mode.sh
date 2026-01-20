@@ -21,22 +21,22 @@ fi
 
 # Check for active ultrawork state
 ULTRAWORK_STATE=""
-if [ -f "$DIRECTORY/.sisyphus/ultrawork-state.json" ]; then
-  ULTRAWORK_STATE=$(cat "$DIRECTORY/.sisyphus/ultrawork-state.json" 2>/dev/null)
+if [ -f "$DIRECTORY/.omc/ultrawork-state.json" ]; then
+  ULTRAWORK_STATE=$(cat "$DIRECTORY/.omc/ultrawork-state.json" 2>/dev/null)
 elif [ -f "$HOME/.claude/ultrawork-state.json" ]; then
   ULTRAWORK_STATE=$(cat "$HOME/.claude/ultrawork-state.json" 2>/dev/null)
 fi
 
 # Check for active ralph loop
 RALPH_STATE=""
-if [ -f "$DIRECTORY/.sisyphus/ralph-state.json" ]; then
-  RALPH_STATE=$(cat "$DIRECTORY/.sisyphus/ralph-state.json" 2>/dev/null)
+if [ -f "$DIRECTORY/.omc/ralph-state.json" ]; then
+  RALPH_STATE=$(cat "$DIRECTORY/.omc/ralph-state.json" 2>/dev/null)
 fi
 
 # Check for verification state (oracle verification)
 VERIFICATION_STATE=""
-if [ -f "$DIRECTORY/.sisyphus/ralph-verification.json" ]; then
-  VERIFICATION_STATE=$(cat "$DIRECTORY/.sisyphus/ralph-verification.json" 2>/dev/null)
+if [ -f "$DIRECTORY/.omc/ralph-verification.json" ]; then
+  VERIFICATION_STATE=$(cat "$DIRECTORY/.omc/ralph-verification.json" 2>/dev/null)
 fi
 
 # Check for incomplete todos
@@ -58,7 +58,7 @@ if [ -d "$TODOS_DIR" ]; then
 fi
 
 # Check project todos as well
-for todo_path in "$DIRECTORY/.sisyphus/todos.json" "$DIRECTORY/.claude/todos.json"; do
+for todo_path in "$DIRECTORY/.omc/todos.json" "$DIRECTORY/.claude/todos.json"; do
   if [ -f "$todo_path" ]; then
     if command -v jq &> /dev/null; then
       COUNT=$(jq 'if type == "array" then [.[] | select(.status != "completed" and .status != "cancelled")] | length else 0 end' "$todo_path" 2>/dev/null || echo "0")
@@ -106,11 +106,22 @@ EOF
     if [ "$ITERATION" -lt "$MAX_ITER" ]; then
       # Increment iteration
       NEW_ITER=$((ITERATION + 1))
-      echo "$RALPH_STATE" | jq ".iteration = $NEW_ITER" > "$DIRECTORY/.sisyphus/ralph-state.json" 2>/dev/null
+      echo "$RALPH_STATE" | jq ".iteration = $NEW_ITER" > "$DIRECTORY/.omc/ralph-state.json" 2>/dev/null
 
-      cat << EOF
+      # Check if ultrawork is linked (auto-activated with ralph)
+      LINKED_ULTRAWORK=$(echo "$RALPH_STATE" | jq -r '.linked_ultrawork // false' 2>/dev/null)
+
+      if [ "$LINKED_ULTRAWORK" = "true" ]; then
+        # Combined ralph+ultrawork message with parallel execution rules
+        cat << EOF
+{"continue": false, "reason": "<ralph-ultrawork-continuation>\n\n[RALPH + ULTRAWORK - ITERATION $NEW_ITER/$MAX_ITER]\n\nYour previous attempt did not output the completion promise. The work is NOT done yet.\n\n## ULTRAWORK RULES (ACTIVE)\n- **PARALLEL**: Fire independent calls simultaneously - NEVER wait sequentially\n- **BACKGROUND FIRST**: Use Task(run_in_background=true) for long operations\n- **DELEGATE**: Route tasks to specialist agents immediately\n- **SMART ROUTING**: Use haiku for lookups, sonnet for standard work, opus for complex analysis\n- **TODO**: Track EVERY step. Mark complete IMMEDIATELY.\n\n## COMPLETION REQUIREMENTS\n1. Review your progress and the original task\n2. Check your todo list - are ALL items marked complete?\n3. Continue from where you left off using PARALLEL execution\n4. Get Architect verification when ready\n5. When FULLY complete AND verified, output: <promise>$PROMISE</promise>\n6. Do NOT stop until the task is truly done\n\nOriginal task: $PROMPT\n\n</ralph-ultrawork-continuation>\n\n---\n"}
+EOF
+      else
+        # Standard ralph-only message
+        cat << EOF
 {"continue": false, "reason": "<ralph-loop-continuation>\n\n[RALPH LOOP - ITERATION $NEW_ITER/$MAX_ITER]\n\nYour previous attempt did not output the completion promise. The work is NOT done yet.\n\nCRITICAL INSTRUCTIONS:\n1. Review your progress and the original task\n2. Check your todo list - are ALL items marked complete?\n3. Continue from where you left off\n4. When FULLY complete, output: <promise>$PROMISE</promise>\n5. Do NOT stop until the task is truly done\n\nOriginal task: $PROMPT\n\n</ralph-loop-continuation>\n\n---\n"}
 EOF
+      fi
       exit 0
     fi
   fi
@@ -277,7 +288,7 @@ if [ -n "$ULTRAWORK_STATE" ] && [ "$INCOMPLETE_COUNT" -gt 0 ]; then
 
     # Update state file (best effort)
     if command -v jq &> /dev/null; then
-      echo "$ULTRAWORK_STATE" | jq ".reinforcement_count = $NEW_COUNT | .last_checked_at = \"$(date -Iseconds)\"" > "$DIRECTORY/.sisyphus/ultrawork-state.json" 2>/dev/null
+      echo "$ULTRAWORK_STATE" | jq ".reinforcement_count = $NEW_COUNT | .last_checked_at = \"$(date -Iseconds)\"" > "$DIRECTORY/.omc/ultrawork-state.json" 2>/dev/null
     fi
 
     cat << EOF

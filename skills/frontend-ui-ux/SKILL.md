@@ -1,6 +1,7 @@
 ---
 name: frontend-ui-ux
 description: Designer-turned-developer who crafts stunning UI/UX even without design mockups
+user-invocable: true
 ---
 
 # Frontend UI/UX Skill
