@@ -10,6 +10,9 @@
 
 **Multi-agent orchestration for Claude Code. Zero learning curve.**
 
+*Some advanced users customize zsh for years — most of us just use oh-my-zsh.*
+*Don't learn Claude Code. Just use OMC.*
+
 [Get Started](#get-started) • [Documentation](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Migration Guide](docs/MIGRATION.md)
 
 </div>
