@@ -223,7 +223,7 @@ Smart cancellation that auto-detects active mode:
 
 **Auto-detects and cancels:** autopilot, ultrapilot, ralph, ultrawork, ultraqa, ecomode, swarm, pipeline
 
-**Removed in v3.6.0:** Individual cancel commands (`cancel-ralph`, `cancel-ultraqa`, `cancel-ultrawork`, `cancel-ecomode`, `cancel-autopilot`) have been removed. Use `/oh-my-claudecode:cancel` instead.
+**Removed in v3.5.3:** Individual cancel commands (`cancel-ralph`, `cancel-ultraqa`, `cancel-ultrawork`, `cancel-ecomode`, `cancel-autopilot`) have been removed. Use `/oh-my-claudecode:cancel` instead.
 
 ### 🔍 Explore-High Agent
 

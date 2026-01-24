@@ -6,14 +6,14 @@ This guide covers all migration paths for oh-my-claudecode. Find your current ve
 
 ## Table of Contents
 
-- [v3.5 → v3.6: Skill Consolidation](#v35--v36-skill-consolidation)
+- [v3.5.2 → v3.5.3: Skill Consolidation](#v35--v36-skill-consolidation)
 - [v2.x → v3.0: Package Rename & Auto-Activation](#v2x--v30-package-rename--auto-activation)
 - [v3.0 → v3.1: Notepad Wisdom & Enhanced Features](#v30--v31-notepad-wisdom--enhanced-features)
 - [v3.x → v4.0: Major Architecture Overhaul](#v3x--v40-major-architecture-overhaul)
 
 ---
 
-## v3.5 → v3.6: Skill Consolidation
+## v3.5.2 → v3.5.3: Skill Consolidation
 
 ### TL;DR
 
@@ -21,7 +21,7 @@ This guide covers all migration paths for oh-my-claudecode. Find your current ve
 
 ### Removed Skills
 
-The following skills have been **completely removed** in v3.6.0:
+The following skills have been **completely removed** in v3.5.3:
 
 | Removed Skill | Replacement |
 |---------------|-------------|
@@ -36,14 +36,14 @@ The following skills have been **completely removed** in v3.6.0:
 
 ### What Changed
 
-**Before v3.6:**
+**Before v3.5.3:**
 ```bash
 /oh-my-claudecode:cancel-ralph      # Cancel ralph specifically
 /oh-my-claudecode:omc-default       # Configure local project
 /oh-my-claudecode:planner "task"    # Start planning
 ```
 
-**After v3.6:**
+**After v3.5.3:**
 ```bash
 /oh-my-claudecode:cancel            # Auto-detects and cancels any active mode
 /oh-my-claudecode:omc-setup --local # Configure local project
@@ -72,7 +72,7 @@ The following skills have been **completely removed** in v3.6.0:
 ### Skill Count
 
 - v3.5: 42 skills
-- v3.6: 35 skills (8 removed, 1 added)
+- v3.5.3: 35 skills (8 removed, 1 added)
 
 ---
 
