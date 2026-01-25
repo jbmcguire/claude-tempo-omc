@@ -205,6 +205,22 @@ When agents are running, the HUD shows detailed information on separate lines:
 - **Yellow**: Warning (context >70%, ralph >7)
 - **Red**: Critical (context >85%, ralph at max)
 
+## Transparent Background
+
+For terminals with custom background images (e.g., iTerm2), you can enable transparent background mode:
+
+```json
+{
+  "elements": {
+    "transparentBackground": true
+  }
+}
+```
+
+This uses ANSI escape code `\x1b[49m` on each line to reset the text background to your terminal's default.
+
+> **Note**: The statusLine container background is controlled by Claude Code's TUI framework. If you still see a black background after enabling this option, this is a Claude Code limitation. Consider requesting transparent statusLine support in the [Claude Code repository](https://github.com/anthropics/claude-code/issues).
+
 ## Configuration Location
 
 HUD config is stored at: `~/.claude/.omc/hud-config.json`
@@ -225,7 +241,8 @@ You can manually edit the config file:
     "contextBar": true,
     "agents": true,
     "backgroundTasks": true,
-    "todos": true
+    "todos": true,
+    "transparentBackground": false
   },
   "thresholds": {
     "contextWarning": 70,

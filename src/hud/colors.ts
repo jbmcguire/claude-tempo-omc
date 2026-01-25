@@ -19,6 +19,7 @@ const WHITE = '\x1b[37m';
 const BRIGHT_BLUE = '\x1b[94m';
 const BRIGHT_MAGENTA = '\x1b[95m';
 const BRIGHT_CYAN = '\x1b[96m';
+const DEFAULT_BG = '\x1b[49m';
 
 // ============================================================================
 // Color Functions
@@ -170,4 +171,21 @@ export function coloredValue(
 ): string {
   const color = getColor(value, total);
   return `${color}${value}/${total}${RESET}`;
+}
+
+// ============================================================================
+// Background Control
+// ============================================================================
+
+/**
+ * Apply transparent (terminal default) background to each line of text.
+ * This ensures each line starts with \x1b[49m to reset background to terminal default.
+ * Useful for terminals with custom background images (e.g., iTerm2).
+ *
+ * Note: This helps with the text portion but the statusLine container background
+ * is controlled by Claude Code's TUI framework.
+ */
+export function transparentBg(text: string): string {
+  // Apply default background to each line to ensure consistency
+  return text.split('\n').map(line => `${DEFAULT_BG}${line}`).join('\n');
 }

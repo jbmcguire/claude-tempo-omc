@@ -5,7 +5,7 @@
  */
 
 import type { HudRenderContext, HudConfig } from './types.js';
-import { bold, dim } from './colors.js';
+import { bold, dim, transparentBg } from './colors.js';
 import { renderRalph } from './elements/ralph.js';
 import { renderAgentsByFormat, renderAgentsMultiLine } from './elements/agents.js';
 import { renderTodosWithCurrent } from './elements/todos.js';
@@ -67,7 +67,12 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
       if (todos) lines.push(todos);
     }
 
-    return lines.join('\n');
+    // Apply transparent background if configured (analytics preset)
+    let analyticsOutput = lines.join('\n');
+    if (enabledElements.transparentBackground) {
+      analyticsOutput = transparentBg(analyticsOutput);
+    }
+    return analyticsOutput;
   }
 
   // [OMC] label
@@ -200,9 +205,17 @@ export async function render(context: HudRenderContext, config: HudConfig): Prom
   }
 
   // If we have detail lines, output multi-line
+  let output: string;
   if (detailLines.length > 0) {
-    return [headerLine, ...detailLines].join('\n');
+    output = [headerLine, ...detailLines].join('\n');
+  } else {
+    output = headerLine;
   }
 
-  return headerLine;
+  // Apply transparent background if configured
+  if (enabledElements.transparentBackground) {
+    output = transparentBg(output);
+  }
+
+  return output;
 }

@@ -247,6 +247,7 @@ export interface HudElementConfig {
   thinking: boolean;          // Show extended thinking indicator
   sessionHealth: boolean;     // Show session health/duration
   useBars: boolean;           // Show visual progress bars instead of/alongside percentages
+  transparentBackground: boolean;  // Use terminal default background (for custom backgrounds like iTerm2)
 }
 
 export interface HudThresholds {
@@ -287,6 +288,7 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     thinking: true,
     sessionHealth: true,
     useBars: false,  // Disabled by default for backwards compatibility
+    transparentBackground: false,  // Disabled by default for backwards compatibility
   },
   thresholds: {
     contextWarning: 70,
@@ -315,6 +317,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     thinking: false,
     sessionHealth: false,
     useBars: false,
+    transparentBackground: false,
   },
   analytics: {
     omcLabel: false,
@@ -334,6 +337,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     thinking: false,
     sessionHealth: false,
     useBars: false,
+    transparentBackground: false,
   },
   focused: {
     omcLabel: true,
@@ -353,6 +357,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     thinking: true,
     sessionHealth: true,
     useBars: true,
+    transparentBackground: false,
   },
   full: {
     omcLabel: true,
@@ -372,6 +377,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     thinking: true,
     sessionHealth: true,
     useBars: true,
+    transparentBackground: false,
   },
   opencode: {
     omcLabel: true,
@@ -391,6 +397,7 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     thinking: true,
     sessionHealth: true,
     useBars: false,
+    transparentBackground: false,
   },
   dense: {
     omcLabel: true,
@@ -410,5 +417,6 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     thinking: true,
     sessionHealth: true,
     useBars: true,
+    transparentBackground: false,
   },
 };
