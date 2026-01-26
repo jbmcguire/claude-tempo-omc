@@ -664,3 +664,19 @@ export {
   type IntegrationResult,
   type FileOwnership
 } from './ultrapilot/index.js';
+
+export {
+  // Mode Registry (Centralized State Management)
+  MODE_CONFIGS,
+  getStateDir,
+  ensureStateDir as ensureModeStateDir,
+  getStateFilePath as getModeStateFilePath,
+  getMarkerFilePath as getModeMarkerFilePath,
+  getGlobalStateFilePath,
+  clearModeState,
+  hasModeState,
+  getActiveModes,
+  clearAllModeStates,
+  type ExecutionMode,
+  type ModeConfig
+} from './mode-registry/index.js';

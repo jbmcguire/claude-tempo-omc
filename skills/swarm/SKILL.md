@@ -332,6 +332,19 @@ Spawns 2 writers, each documenting different modules.
 - **Progress Visibility:** Live stats on claimed/done/pending
 - **Scalable:** Works for 10s to 100s of subtasks
 
+## STATE CLEANUP ON COMPLETION
+
+**IMPORTANT: Delete state files on completion - do NOT just set `active: false`**
+
+When all tasks are done:
+
+```bash
+# Delete swarm state files
+rm -f .omc/state/swarm-state.json
+rm -f .omc/state/swarm-tasks.json
+rm -f .omc/state/swarm-claims.json
+```
+
 ## Implementation Notes
 
 The orchestrator (main skill handler) is responsible for:

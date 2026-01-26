@@ -547,6 +547,18 @@ Then run:
 /oh-my-claudecode:ultrapilot --custom-decomposition
 ```
 
+## STATE CLEANUP ON COMPLETION
+
+**IMPORTANT: Delete state files on completion - do NOT just set `active: false`**
+
+When all workers complete successfully:
+
+```bash
+# Delete ultrapilot state files
+rm -f .omc/state/ultrapilot-state.json
+rm -f .omc/state/ultrapilot-ownership.json
+```
+
 ## Future Enhancements
 
 **Planned for v4.1:**
