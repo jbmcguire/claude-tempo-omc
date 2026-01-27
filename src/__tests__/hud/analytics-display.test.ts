@@ -148,6 +148,11 @@ describe('renderAnalyticsLineWithConfig', () => {
       const result = renderAnalyticsLineWithConfig({ ...baseAnalytics, costColor: 'red' }, true, true);
       expect(result).toContain('🔴');
     });
+
+    it('handles empty topAgents gracefully', () => {
+      const result = renderAnalyticsLineWithConfig({ ...baseAnalytics, topAgents: 'none' }, true, true);
+      expect(result).toContain('Top: none');
+    });
   });
 
   describe('showCost=false, showCache=true', () => {
