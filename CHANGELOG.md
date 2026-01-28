@@ -5,6 +5,113 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.6] - 2026-01-28
+
+### Added
+
+#### Multi-Language Diagnostics Expansion (Major Feature)
+
+Comprehensive language support expansion for LSP, AST, and directory diagnostics tools. PR #178.
+
+##### 11 New LSP Server Configurations
+| Language | Server | Extensions |
+|----------|--------|------------|
+| Ruby | solargraph | `.rb`, `.rake`, `.gemspec` |
+| PHP | intelephense | `.php`, `.phtml` |
+| Lua | lua-language-server | `.lua` |
+| Bash | bash-language-server | `.sh`, `.bash` |
+| Elixir | elixir-ls | `.ex`, `.exs` |
+| Kotlin | kotlin-language-server | `.kt`, `.kts` |
+| Swift | sourcekit-lsp | `.swift` |
+| C# | OmniSharp | `.cs` |
+| Scala | metals | `.scala`, `.sc` |
+| Zig | zls | `.zig` |
+| Haskell | haskell-language-server | `.hs`, `.lhs` |
+
+##### 7 New AST Languages (ast-grep)
+- Bash, Elixir, Haskell, Lua, PHP, Scala, SQL
+- Total ast-grep languages: 24
+
+##### 4 New Diagnostic Strategies
+| Strategy | Tool | Config File |
+|----------|------|-------------|
+| `tsc` | TypeScript compiler | `tsconfig.json` |
+| `go` | go vet | `go.mod` |
+| `rust` | cargo check | `Cargo.toml` |
+| `python` | mypy/pylint | `pyproject.toml`, `requirements.txt`, `setup.py` |
+
+- Auto-detection via `strategy: 'auto'` (default)
+- Fallback to LSP iteration for unknown project types
+- All runners use `execFileSync` (no shell injection risk)
+- 5-minute timeout enforcement across all runners
+
+### Changed
+
+#### Rust Diagnostic Parser Rewrite
+- **JSON output format**: Switched from regex to `--message-format=json` for reliable parsing
+- **Multi-line support**: JSON parsing correctly handles complex cargo output with note blocks
+- **CRLF handling**: Windows line endings handled via `line.trim()` before `JSON.parse()`
+
+#### Code Quality Improvements
+- **DRY refactor**: Extracted `makeSkippedResult()` helper replacing 7 duplicated blocks in `index.ts`
+- **Type safety**: `EXT_TO_LANG` now typed as `Record<string, LanguageKey>` for compile-time validation
+- **Unused variable fix**: `Object.values()` in `servers.ts` instead of `Object.entries()` with unused `_`
+
+### Fixed
+
+#### Security & Robustness (Conservative Review Findings)
+
+1. **Circular Dependency** - Extracted `EXTERNAL_PROCESS_TIMEOUT_MS` and `LSP_DIAGNOSTICS_WAIT_MS` to new `constants.ts` file
+2. **ENOENT Handling** - All 5 runners now handle missing binary gracefully with `skipped` message:
+   - `tsc` binary not found in PATH
+   - `go` binary not found in PATH
+   - `cargo` binary not found in PATH
+   - `mypy` binary not found in PATH
+   - `pylint` binary not found in PATH
+3. **Skipped Field Consistency** - `TscResult` now includes `skipped?: string` matching other runners
+4. **Empty Output Detection** - TSC runner detects crashed compiler with no output (synthetic `tsc-crash` diagnostic)
+5. **Missing Manifest Messages** - All runners return informative `skipped` messages when project files missing
+6. **LSP Language ID Mappings** - Added missing mappings: `pyw→python`, `cxx→cpp`, `hxx→cpp`, `less→less`
+7. **Integration Test Fix** - Fixed async mock issue in `integration.test.ts` (`await vi.importActual` moved outside mock)
+8. **stdout/stderr Ordering** - Rust runner reads `stdout` first for JSON mode (was `stderr`)
+
+### Testing
+
+- **31 new diagnostic tests** (parsers, integration, detectProjectType)
+- **62 edge case validations** (CRLF, Unicode, Windows paths, malformed input)
+- All tests pass with comprehensive coverage
+
+### Technical Details
+
+**New Files:**
+- `src/tools/diagnostics/constants.ts` - Shared timeout constants
+- `src/tools/diagnostics/go-runner.ts` - Go vet runner (98 lines)
+- `src/tools/diagnostics/rust-runner.ts` - Cargo check runner (129 lines)
+- `src/tools/diagnostics/python-runner.ts` - Mypy/Pylint runner (231 lines)
+- `src/tools/diagnostics/__tests__/parsers.test.ts` - Parser unit tests (224 lines)
+- `src/tools/diagnostics/__tests__/detectProjectType.test.ts` - Project detection tests
+- `src/tools/diagnostics/__tests__/integration.test.ts` - Integration tests
+
+**Files Modified:**
+- `src/tools/diagnostics/index.ts` - Multi-strategy dispatch (+265 lines)
+- `src/tools/diagnostics/tsc-runner.ts` - ENOENT handling (+30 lines)
+- `src/tools/diagnostics/lsp-aggregator.ts` - Dynamic extensions (+37 lines)
+- `src/tools/lsp/servers.ts` - 11 new server configs (+114 lines)
+- `src/tools/lsp/client.ts` - Language ID mappings (+23 lines)
+- `src/tools/ast-tools.ts` - 7 new languages (+64 lines)
+
+**Lines Changed:** +1,300 (14 files)
+
+---
+
+## [3.7.5] - 2026-01-28
+
+### Fixed
+
+- **Hooks System**: Fix hook execution order and async handling
+
+---
+
 ## [3.7.4] - 2026-01-28
 
 ### Changed
