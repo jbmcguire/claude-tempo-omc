@@ -69,7 +69,7 @@ export function runRustDiagnostics(directory: string): RustResult {
 export function parseRustOutput(output: string): RustResult {
   const diagnostics: RustDiagnostic[] = [];
 
-  const regex = /(error|warning)(?:\[([A-Z]\d+)\])?: (.+?)\n\s+-->\s+(.+?):(\d+):(\d+)/g;
+  const regex = /(error|warning)(?:\[([A-Z]\d+)\])?: ([^\n]+)\n\s+-->\s+([^\n:]+):(\d+):(\d+)/g;
   let match;
 
   while ((match = regex.exec(output)) !== null) {

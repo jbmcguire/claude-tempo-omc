@@ -8,6 +8,11 @@
 import { execFileSync } from 'child_process';
 import { extname } from 'path';
 
+/**
+ * Timeout for which/where command existence checks (ms)
+ */
+const COMMAND_EXISTS_TIMEOUT_MS = 5000;
+
 export interface LspServerConfig {
   name: string;
   command: string;
@@ -177,15 +182,15 @@ export const LSP_SERVERS: Record<string, LspServerConfig> = {
  * Input validation rejects command names with shell metacharacters.
  */
 export function commandExists(command: string): boolean {
-  // Input validation - reject commands with shell metacharacters
-  if (!command || /[;&|`$<>\s]/.test(command)) {
+  // Input validation - only allow safe command names (alphanumeric, dot, underscore, hyphen)
+  if (!command || !/^[a-zA-Z0-9._-]+$/.test(command)) {
     return false;
   }
   try {
     const checkCommand = process.platform === 'win32' ? 'where' : 'which';
     execFileSync(checkCommand, [command], {
       stdio: 'ignore',
-      timeout: 5000  // 5 second timeout for which/where
+      timeout: COMMAND_EXISTS_TIMEOUT_MS
     });
     return true;
   } catch {

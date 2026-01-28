@@ -4,7 +4,7 @@
  * Uses `go vet` for static analysis of Go projects.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { EXTERNAL_PROCESS_TIMEOUT_MS } from './index.js';
@@ -42,10 +42,10 @@ export function runGoDiagnostics(directory: string): GoResult {
   }
 
   try {
-    execSync('go vet ./...', {
+    execFileSync('go', ['vet', './...'], {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {

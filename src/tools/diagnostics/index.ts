@@ -9,7 +9,7 @@
  * - Fallback: LSP iteration
  */
 
-import { existsSync } from 'fs';
+import { existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { runTscDiagnostics, TscDiagnostic, TscResult } from './tsc-runner.js';
 import { runLspAggregatedDiagnostics, LspDiagnosticWithFile, LspAggregationResult } from './lsp-aggregator.js';
@@ -30,6 +30,79 @@ export interface DirectoryDiagnosticResult {
   warningCount: number;
   diagnostics: string;
   summary: string;
+}
+
+/**
+ * Base diagnostic fields that all diagnostic types share
+ */
+interface BaseDiagnostic {
+  file: string;
+  line: number;
+  column: number;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+/**
+ * Base result fields that all result types share
+ */
+interface BaseResult<D extends BaseDiagnostic> {
+  success: boolean;
+  diagnostics: D[];
+  errorCount: number;
+  warningCount: number;
+}
+
+/**
+ * Format any diagnostic result into standard DirectoryDiagnosticResult
+ * Uses generics to accept any diagnostic type that extends BaseDiagnostic.
+ * The `code` property is accessed via runtime check since not all diagnostics have it.
+ *
+ * @param result - Result with diagnostics (TscResult, GoResult, RustResult, PythonResult)
+ * @param strategy - The strategy name
+ * @param toolName - Human-readable tool name for messages
+ */
+function formatDiagnosticResult<D extends BaseDiagnostic>(
+  result: BaseResult<D>,
+  strategy: 'tsc' | 'go' | 'rust' | 'python',
+  toolName: string
+): DirectoryDiagnosticResult {
+  let diagnostics = '';
+  let summary = '';
+
+  if (result.diagnostics.length === 0) {
+    diagnostics = `No diagnostics found. ${toolName} passed!`;
+    summary = `${toolName} passed: 0 errors, 0 warnings`;
+  } else {
+    const byFile = new Map<string, D[]>();
+    for (const diag of result.diagnostics) {
+      if (!byFile.has(diag.file)) byFile.set(diag.file, []);
+      byFile.get(diag.file)!.push(diag);
+    }
+
+    const fileOutputs: string[] = [];
+    for (const [file, diags] of byFile) {
+      let fileOutput = `${file}:\n`;
+      for (const diag of diags) {
+        // Use runtime check for 'code' since GoDiagnostic doesn't have it
+        const code = 'code' in diag && diag.code ? `[${diag.code}] ` : '';
+        fileOutput += `  ${diag.line}:${diag.column} - ${diag.severity} ${code}: ${diag.message}\n`;
+      }
+      fileOutputs.push(fileOutput);
+    }
+
+    diagnostics = fileOutputs.join('\n');
+    summary = `${toolName} ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings`;
+  }
+
+  return {
+    strategy,
+    success: result.success,
+    errorCount: result.errorCount,
+    warningCount: result.warningCount,
+    diagnostics,
+    summary
+  };
 }
 
 /**
@@ -66,6 +139,30 @@ export async function runDirectoryDiagnostics(
   directory: string,
   strategy: DiagnosticsStrategy = 'auto'
 ): Promise<DirectoryDiagnosticResult> {
+  // Validate directory exists
+  if (!existsSync(directory)) {
+    return {
+      strategy: strategy === 'auto' ? 'lsp' : strategy,
+      success: false,
+      errorCount: 1,
+      warningCount: 0,
+      diagnostics: `Directory does not exist: ${directory}`,
+      summary: 'Diagnostics failed: directory not found'
+    };
+  }
+
+  // Check if it's actually a directory (not a file)
+  if (!statSync(directory).isDirectory()) {
+    return {
+      strategy: strategy === 'auto' ? 'lsp' : strategy,
+      success: false,
+      errorCount: 1,
+      warningCount: 0,
+      diagnostics: `Path is not a directory: ${directory}`,
+      summary: 'Diagnostics failed: path is not a directory'
+    };
+  }
+
   let useStrategy: 'tsc' | 'go' | 'rust' | 'python' | 'lsp';
 
   if (strategy === 'auto') {
@@ -103,44 +200,7 @@ export async function runDirectoryDiagnostics(
  * Format tsc results into standard format
  */
 function formatTscResult(result: TscResult): DirectoryDiagnosticResult {
-  let diagnostics = '';
-  let summary = '';
-
-  if (result.diagnostics.length === 0) {
-    diagnostics = 'No diagnostics found. All files are clean!';
-    summary = 'TypeScript check passed: 0 errors, 0 warnings';
-  } else {
-    // Group diagnostics by file
-    const byFile = new Map<string, TscDiagnostic[]>();
-    for (const diag of result.diagnostics) {
-      if (!byFile.has(diag.file)) {
-        byFile.set(diag.file, []);
-      }
-      byFile.get(diag.file)!.push(diag);
-    }
-
-    // Format each file's diagnostics
-    const fileOutputs: string[] = [];
-    for (const [file, diags] of byFile) {
-      let fileOutput = `${file}:\n`;
-      for (const diag of diags) {
-        fileOutput += `  ${diag.line}:${diag.column} - ${diag.severity} ${diag.code}: ${diag.message}\n`;
-      }
-      fileOutputs.push(fileOutput);
-    }
-
-    diagnostics = fileOutputs.join('\n');
-    summary = `TypeScript check ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings`;
-  }
-
-  return {
-    strategy: 'tsc',
-    success: result.success,
-    errorCount: result.errorCount,
-    warningCount: result.warningCount,
-    diagnostics,
-    summary
-  };
+  return formatDiagnosticResult(result, 'tsc', 'TypeScript check');
 }
 
 /**
@@ -188,81 +248,14 @@ function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResul
  * Format Go vet results into standard format
  */
 function formatGoResult(result: GoResult): DirectoryDiagnosticResult {
-  let diagnostics = '';
-  let summary = '';
-
-  if (result.diagnostics.length === 0) {
-    diagnostics = 'No diagnostics found. Go vet passed!';
-    summary = 'Go vet passed: 0 errors, 0 warnings';
-  } else {
-    const byFile = new Map<string, GoDiagnostic[]>();
-    for (const diag of result.diagnostics) {
-      if (!byFile.has(diag.file)) byFile.set(diag.file, []);
-      byFile.get(diag.file)!.push(diag);
-    }
-
-    const fileOutputs: string[] = [];
-    for (const [file, diags] of byFile) {
-      let fileOutput = `${file}:\n`;
-      for (const diag of diags) {
-        fileOutput += `  ${diag.line}:${diag.column} - ${diag.severity}: ${diag.message}\n`;
-      }
-      fileOutputs.push(fileOutput);
-    }
-
-    diagnostics = fileOutputs.join('\n');
-    summary = `Go vet ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings`;
-  }
-
-  return {
-    strategy: 'go',
-    success: result.success,
-    errorCount: result.errorCount,
-    warningCount: result.warningCount,
-    diagnostics,
-    summary
-  };
+  return formatDiagnosticResult(result, 'go', 'Go vet');
 }
 
 /**
  * Format Cargo check results into standard format
  */
 function formatRustResult(result: RustResult): DirectoryDiagnosticResult {
-  let diagnostics = '';
-  let summary = '';
-
-  if (result.diagnostics.length === 0) {
-    diagnostics = 'No diagnostics found. Cargo check passed!';
-    summary = 'Cargo check passed: 0 errors, 0 warnings';
-  } else {
-    const byFile = new Map<string, RustDiagnostic[]>();
-    for (const diag of result.diagnostics) {
-      if (!byFile.has(diag.file)) byFile.set(diag.file, []);
-      byFile.get(diag.file)!.push(diag);
-    }
-
-    const fileOutputs: string[] = [];
-    for (const [file, diags] of byFile) {
-      let fileOutput = `${file}:\n`;
-      for (const diag of diags) {
-        const code = diag.code ? `[${diag.code}] ` : '';
-        fileOutput += `  ${diag.line}:${diag.column} - ${diag.severity} ${code}: ${diag.message}\n`;
-      }
-      fileOutputs.push(fileOutput);
-    }
-
-    diagnostics = fileOutputs.join('\n');
-    summary = `Cargo check ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings`;
-  }
-
-  return {
-    strategy: 'rust',
-    success: result.success,
-    errorCount: result.errorCount,
-    warningCount: result.warningCount,
-    diagnostics,
-    summary
-  };
+  return formatDiagnosticResult(result, 'rust', 'Cargo check');
 }
 
 /**
@@ -270,41 +263,7 @@ function formatRustResult(result: RustResult): DirectoryDiagnosticResult {
  */
 function formatPythonResult(result: PythonResult): DirectoryDiagnosticResult {
   const toolName = result.tool === 'mypy' ? 'Mypy' : result.tool === 'pylint' ? 'Pylint' : 'Python';
-  let diagnostics = '';
-  let summary = '';
-
-  if (result.diagnostics.length === 0) {
-    diagnostics = `No diagnostics found. ${toolName} passed!`;
-    summary = `${toolName} passed: 0 errors, 0 warnings`;
-  } else {
-    const byFile = new Map<string, PythonDiagnostic[]>();
-    for (const diag of result.diagnostics) {
-      if (!byFile.has(diag.file)) byFile.set(diag.file, []);
-      byFile.get(diag.file)!.push(diag);
-    }
-
-    const fileOutputs: string[] = [];
-    for (const [file, diags] of byFile) {
-      let fileOutput = `${file}:\n`;
-      for (const diag of diags) {
-        const code = diag.code ? `[${diag.code}] ` : '';
-        fileOutput += `  ${diag.line}:${diag.column} - ${diag.severity} ${code}: ${diag.message}\n`;
-      }
-      fileOutputs.push(fileOutput);
-    }
-
-    diagnostics = fileOutputs.join('\n');
-    summary = `${toolName} ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings`;
-  }
-
-  return {
-    strategy: 'python',
-    success: result.success,
-    errorCount: result.errorCount,
-    warningCount: result.warningCount,
-    diagnostics,
-    summary
-  };
+  return formatDiagnosticResult(result, 'python', toolName);
 }
 
 // Re-export types for convenience

@@ -65,7 +65,7 @@ export function runTscDiagnostics(directory: string): TscResult {
  * Parse TypeScript compiler output into structured diagnostics
  * Format: file(line,col): error TS1234: message
  */
-function parseTscOutput(output: string): TscResult {
+export function parseTscOutput(output: string): TscResult {
   const diagnostics: TscDiagnostic[] = [];
 
   // Parse tsc output format: file(line,col): error TS1234: message

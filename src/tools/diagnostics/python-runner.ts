@@ -5,7 +5,7 @@
  * Falls back to pylint if mypy unavailable.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { commandExists } from '../lsp/servers.js';
@@ -68,10 +68,10 @@ export function runPythonDiagnostics(directory: string): PythonResult {
 
 function runMypy(directory: string): PythonResult {
   try {
-    execSync('mypy . --ignore-missing-imports', {
+    execFileSync('mypy', ['.', '--ignore-missing-imports'], {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
@@ -83,6 +83,15 @@ function runMypy(directory: string): PythonResult {
     };
   } catch (error: any) {
     const output = error.stdout || '';
+    if (!output.trim()) {
+      return {
+        success: false,
+        diagnostics: [],
+        errorCount: 0,
+        warningCount: 0,
+        tool: 'mypy'
+      };
+    }
     return parseMypyOutput(output);
   }
 }
@@ -122,10 +131,10 @@ export function parseMypyOutput(output: string): PythonResult {
 
 function runPylint(directory: string): PythonResult {
   try {
-    execSync('pylint --output-format=text --score=no .', {
+    execFileSync('pylint', ['--output-format=text', '--score=no', '.'], {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe',
+      stdio: ['pipe', 'pipe', 'pipe'],
       timeout: EXTERNAL_PROCESS_TIMEOUT_MS
     });
     return {
@@ -136,7 +145,16 @@ function runPylint(directory: string): PythonResult {
       tool: 'pylint'
     };
   } catch (error: any) {
-    const output = error.stdout || '';
+    const output = error.stdout || error.stderr || '';
+    if (!output.trim()) {
+      return {
+        success: false,
+        diagnostics: [],
+        errorCount: 0,
+        warningCount: 0,
+        tool: 'pylint'
+      };
+    }
     return parsePylintOutput(output);
   }
 }
