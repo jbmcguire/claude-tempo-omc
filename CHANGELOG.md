@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.4] - 2026-01-28
+
+### Changed
+
+- **Language-Agnostic Agent Prompts** (#174)
+  - build-fixer: Multi-language build/type check commands (TypeScript, Python, Go, Rust, Java)
+  - tdd-guide: Framework-agnostic test examples and coverage commands
+  - security-reviewer: Multi-language vulnerability patterns and dependency audit commands
+  - designer: Framework detection for React, Vue, Angular, Svelte, Solid
+  - code-reviewer: Language-neutral terminology for logging, docs, and patterns
+  - autopilot prompts: Multi-language build/lint/test commands
+  - All agents now detect project type from manifest files and adapt accordingly
+
 ## [3.7.3] - 2026-01-28
 
 ### Added
