@@ -423,7 +423,28 @@ export class LspClient {
       'css': 'css',
       'scss': 'scss',
       'yaml': 'yaml',
-      'yml': 'yaml'
+      'yml': 'yaml',
+      'rb': 'ruby',
+      'rake': 'ruby',
+      'gemspec': 'ruby',
+      'php': 'php',
+      'phtml': 'php',
+      'lua': 'lua',
+      'sh': 'shellscript',
+      'bash': 'shellscript',
+      'zsh': 'shellscript',
+      'ex': 'elixir',
+      'exs': 'elixir',
+      'kt': 'kotlin',
+      'kts': 'kotlin',
+      'swift': 'swift',
+      'cs': 'csharp',
+      'scala': 'scala',
+      'sc': 'scala',
+      'sbt': 'scala',
+      'zig': 'zig',
+      'hs': 'haskell',
+      'lhs': 'haskell'
     };
     return langMap[ext] || ext;
   }
