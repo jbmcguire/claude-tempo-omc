@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.9] - 2026-01-28
+
+### Added
+
+#### Plugin-Scoped MCP Server Discovery
+Standalone MCP server for Claude Code plugin discovery, making omc-tools visible in the `/mcp` management UI.
+
+- **Standalone MCP Server** (`src/mcp/standalone-server.ts`)
+  - Stdio-based MCP server using `@modelcontextprotocol/sdk`
+  - Exposes all 15 custom tools (12 LSP, 2 AST, 1 Python REPL)
+  - Proper JSON Schema conversion from Zod schemas
+  - Compatible with Claude Code's plugin MCP discovery
+
+- **Plugin MCP Configuration** (`.mcp.json`)
+  - Declares `omc-tools` server for plugin-scoped discovery
+  - Uses `${CLAUDE_PLUGIN_ROOT}` for portable paths
+  - Server auto-starts when plugin is enabled
+
+- **Updated Plugin Manifest** (`.claude-plugin/plugin.json`)
+  - Added `mcpServers` reference to `.mcp.json`
+  - Version bumped to 3.7.9
+
+### Changed
+
+- Added `@modelcontextprotocol/sdk` as dependency
+- Updated `package.json` files array to include `.claude-plugin` and `.mcp.json`
+
+### Technical Details
+
+**New Files:**
+- `src/mcp/standalone-server.ts` - Stdio MCP server for plugin discovery
+- `.mcp.json` - MCP server configuration
+
+**How It Works:**
+- In-process SDK MCP (`omc-tools-server.ts`) → for subagents spawned via Agent SDK
+- Standalone stdio MCP (`standalone-server.ts`) → for Claude Code plugin discovery
+
+Users will see `omc-tools` in their MCP management UI after installing the updated plugin.
+
+---
+
 ## [3.7.8] - 2026-01-28
 
 ### Added

@@ -1,6 +1,7 @@
 {
   "name": "oh-my-claudecode",
-  "version": "3.7.8",
+  "version": "3.7.9",
   "description": "Multi-agent orchestration system for Claude Code",
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
 }
