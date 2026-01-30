@@ -1,19 +1,21 @@
 {
-  "name": "oh-my-claudecode",
-  "version": "3.8.14",
-  "description": "Multi-agent orchestration system for Claude Code",
+  "name": "claude-tempo-omc",
+  "version": "0.1.0",
+  "description": "Multi-agent orchestration for Tempo - oh-my-claudecode fork with Bolt System workflows",
   "author": {
-    "name": "oh-my-claudecode contributors"
+    "name": "Bolt System"
   },
-  "repository": "https://github.com/Yeachan-Heo/oh-my-claudecode",
-  "homepage": "https://github.com/Yeachan-Heo/oh-my-claudecode",
+  "repository": "https://github.com/jbmcguire/claude-tempo-omc",
+  "homepage": "https://github.com/jbmcguire/claude-tempo-omc",
   "license": "MIT",
   "keywords": [
     "claude-code",
     "plugin",
     "multi-agent",
-    "orchestration",
-    "automation"
+    "tempo",
+    "laravel",
+    "vue",
+    "gated-workflow"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"

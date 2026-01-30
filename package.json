@@ -1,7 +1,7 @@
 {
-  "name": "oh-my-claude-sisyphus",
-  "version": "3.8.14",
-  "description": "Multi-agent orchestration system for Claude Code - Inspired by oh-my-opencode",
+  "name": "claude-tempo-omc",
+  "version": "0.1.0",
+  "description": "Multi-agent orchestration for Tempo - oh-my-claudecode fork with Bolt System workflows",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
