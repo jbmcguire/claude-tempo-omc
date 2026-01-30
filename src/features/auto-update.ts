@@ -36,6 +36,15 @@ export interface SisyphusConfig {
   configuredAt?: string;
   /** Configuration schema version */
   configVersion?: number;
+  /** Preferred task management tool */
+  taskTool?: 'builtin' | 'beads' | 'beads-rust';
+  /** Configuration for the selected task tool */
+  taskToolConfig?: {
+    /** Use beads-mcp instead of CLI */
+    useMcp?: boolean;
+    /** Inject usage instructions at session start (default: true) */
+    injectInstructions?: boolean;
+  };
 }
 
 /**
@@ -53,7 +62,9 @@ export function getSisyphusConfig(): SisyphusConfig {
     return {
       silentAutoUpdate: config.silentAutoUpdate ?? false,
       configuredAt: config.configuredAt,
-      configVersion: config.configVersion
+      configVersion: config.configVersion,
+      taskTool: config.taskTool,
+      taskToolConfig: config.taskToolConfig,
     };
   } catch {
     // If config file is invalid, default to disabled for security
